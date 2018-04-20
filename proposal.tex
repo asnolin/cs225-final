@@ -12,7 +12,12 @@ We propose to implement a semantics and type checker for the simply typed lambda
 \paragraph{Base Language}
 The base language we will be using is the symply typed lambda calculus from chapter 9.1 from the Types and Programming Languages textbook. This calculus contains terms (variables, abstractions and  applications), values, types and a typing context.
 \paragraph{Extended Language}
-We will extend the simply typed lambda calculus with
+We will extend the simply typed lambda calculus with types: 
+\begin{enumerate}
+	\item error. Which has the typing rule: T-Error
+	\item trap errors. Which has the typing rule: T-Try
+	\item raise exception. Which has the typing rule: T-Exn
+	\item handle exception. Wich has the typing rule: T-Try
 \paragraph{Applications}
 
 \paragraph{Project Goals}
