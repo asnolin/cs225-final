@@ -31,7 +31,7 @@ type value =
 	|VTrue
 	|VFalse
 	|VNat of natval
-	|VLambda of var * ty * exp
+	|VLambda of value * ty * exp
 
 (*small step semantics*)
 type result =
@@ -51,4 +51,11 @@ let rec step (e : exp) : result = match e with
 	|Lam -> raise TODO
 	|App(e1,e2) -> raise TODO
 
+
+(*free vars function*)
+let rec free_vars (e0: exp) : string_set = match e0 with
+        |True -> StringSet.empty
+        |False -> StringSet.empty
+        |If(e1,e2,e3) -> StringSet.union (StringSet.union (free_vars e1) (free_vars e2)) (free_vars e3)
+        |
 
