@@ -4,15 +4,22 @@
         * small step semantics for 9.1 simply typed lambda calc
         * type checker for simply typed lambda calc
 *)
-
-type expressions = 
-        |
-
-
 (*types*)
+type ty = 
+        |Bool
+        |Fun ty * ty
+(*expressions*)
+type exp = 
+        |True
+        |False
+        |Var of string
+        |App of exp * exp
+        |Lam of string * ty * exp
+        |If of exp * exp * exp
+
+
 
 (*values*)
 
-(*expressions*)
 
 (*small step semantics*)
