@@ -7,7 +7,8 @@
 (*types*)
 type ty = 
         |Bool
-        |Fun ty * ty
+        |Fun of ty * ty
+
 (*expressions*)
 type exp = 
         |True
