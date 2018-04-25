@@ -4,17 +4,19 @@
         * small step semantics for 9.1 simply typed lambda calc
         * type checker for simply typed lambda calc
 *)
-
-type expressions = 
-        |
-
-
 (*types*)
 type ty =
 	| Bool
 	| Nat
 	| Fun of ty * ty
-
+(*expressions*)
+type exp = 
+        |True
+        |False
+        |Var of string
+        |App of exp * exp
+        |Lam of string * ty * exp
+        |If of exp * exp * exp
 
 (*values*)
 type natval =
@@ -27,6 +29,5 @@ type value =
 	| VNat of natval
 	| VLambda of var * ty * exp
 
-(*expressions*)
 
 (*small step semantics*)
