@@ -1,0 +1,59 @@
+\documentclass{article}
+\title{CS225 Final Project Proposal}
+\author{Andrew Nolin \\ git@asnolin \and Jared Wiggett \\ git@jwiggett}
+\date{\today}
+
+\begin{document}
+\maketitle
+\section*{Simply Typed Lambda Calculus with Exceptions}
+We propose to implement a semantics and type checker for the simply typed lambda calculus extended with exception terms (errors, try, exceptions). 
+
+
+\paragraph{Base Language}
+The base language we will be using is the symply typed lambda calculus from chapter 9.1 from the Types and Programming Languages textbook. This calculus contains terms (variables, abstractions and  applications), values, types and a typing context.
+\paragraph{Extended Language}
+We will extend the simply typed lambda calculus with types: 
+\begin{enumerate}
+	\item \textbf{error}. Which has the typing rule: T-Error
+	\item \textbf{trap errors}. Which has the typing rule: T-Try
+	\item \textbf{raise exception}. Which has the typing rule: T-Exn
+	\item \textbf{handle exception}. Wich has the typing rule: T-Try
+\end{enumerate}
+\paragraph{Applications}
+Exception handling is a feature in most modern programming languages. It allows the programmer to have an error caused by the environment or user error, without the program crashing. An error caused by the environment could be a missing file, unavailable resource, or any event that could change what is assumed by the programmer to run without error. With exception handling, the program can resume operation after the error. The way exception handling works is that the program is trapped in the error state by the exception handler, the error is resolved, then the program is allowed to continue from that resolved state. The most simple way to handle exceptions is to abort the program as soon as the program encounters an exception, but this method is not ideal because the program is terminated at the error, instead of corrected. Exception handling is more useful than error codes because they can allow for stack tracing, allowing the programmer to easily see what is wrong during a debug.
+\paragraph{Project Goals}
+For this project, we plan to complete:
+\begin{enumerate}
+\item A small-step semantics for the simply-typed lambda calculus extended with exceptions
+\item A type checker for the simply-typed lambda calculus extended with exceptions
+\end{enumerate}
+
+\paragraph{Expected Challenges}
+We expect a challenge to be adding in helper functions to help implement the exception extensions to the language. In the homeworks, these were always provided for us and they seem difficult to incorporate. Also, implementing test suites for the language will be new, as these were also always provided for us. These may be tough simply because we are still not terribly strong OCaml programmers.
+
+\paragraph{Timeline and Milestones}
+
+By the checkpoint we hope to have completed:
+\begin{enumerate}
+\item A prototype implementation of the small-step semantics
+\item A suite of test-cases for the small-step semantics and well-typed relation
+\end{enumerate}
+
+\noindent
+By the final project draft we hope to have completed:
+\begin{enumerate}
+\item The full implementation of small-step semantics and type checking
+\item A fully comprehensive test suite, with all tests passing
+\item One medium-sized program encoded in the language which demonstrates a real-world application of the language
+\item A draft writeup that explains the on-paper formalism of our implementation
+\item A draft of a presentation with 5 slides as the starting point for out in-class presentation
+\end{enumerate}
+
+\noindent
+By the final project submissions we hope to have completed:
+\begin{enumerate}
+\item The final writeup and presentation
+\item The medium-sized program running through both the semantics and type checker implementation
+\item Any remaining implementation work that was missing in the final project draft
+\end{enumerate}
+\end{document}
