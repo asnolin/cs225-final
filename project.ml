@@ -5,10 +5,10 @@
         * type checker for simply typed lambda calc
 *)
 (*types*)
-type ty = 
-        |Bool
-        |Fun of ty * ty
-
+type ty =
+	| Bool
+	| Nat
+	| Fun of ty * ty
 (*expressions*)
 type exp = 
         |True
@@ -18,9 +18,16 @@ type exp =
         |Lam of string * ty * exp
         |If of exp * exp * exp
 
-
-
 (*values*)
+type natval =
+	| VZero
+	| VSucc of natval
+
+type value =
+	| VTrue
+	| VFalse
+	| VNat of natval
+	| VLambda of var * ty * exp
 
 
 (*small step semantics*)
