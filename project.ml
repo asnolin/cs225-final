@@ -3,13 +3,14 @@
 (*TODO for checkpoint:
         * small step semantics for 9.1 simply typed lambda calc
         * type checker for simply typed lambda calc
+        * CONFIG MERLIN WITH .merlin file, needs source and build paths? packages?
 *)
 
 open Util
 open StringSetMap
 
 exception NOT_FOUND
-
+exception TODO
 (*types*)
 type ty =
 	|Bool
@@ -53,8 +54,8 @@ let rec step (e : exp) : result = match e with
 	|Succ(e1) -> raise TODO
 	|Pred(e1) -> raise TODO
 	|IsZero(e1) -> raise TODO
-	|Var -> raise TODO
-	|Lam -> raise TODO
+	|Var(x) -> raise TODO
+	|Lam (x,t1,e1)-> raise TODO
 	|App(e1,e2) -> raise TODO
 
 
@@ -63,5 +64,4 @@ let rec free_vars (e0: exp) : string_set = match e0 with
         |True -> StringSet.empty
         |False -> StringSet.empty
         |If(e1,e2,e3) -> StringSet.union (StringSet.union (free_vars e1) (free_vars e2)) (free_vars e3)
-        |
 
