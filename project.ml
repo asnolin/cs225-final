@@ -12,10 +12,20 @@ type expressions =
 (*types*)
 type ty =
 	| Bool
+	| Nat
 	| Fun of ty * ty
 
 
 (*values*)
+type natval =
+	| VZero
+	| VSucc of natval
+
+type value =
+	| VTrue
+	| VFalse
+	| VNat of natval
+	| VLambda of var * ty * exp
 
 (*expressions*)
 
