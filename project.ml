@@ -6,28 +6,49 @@
 *)
 (*types*)
 type ty =
-	| Bool
-	| Nat
-	| Fun of ty * ty
+	|Bool
+	|Nat
+	|Fun of ty * ty
 (*expressions*)
 type exp = 
         |True
         |False
+	|If of exp * exp * exp
+	|Zero
+	|Succ of exp
+	|Pred of exp
+	|IsZero of exp
         |Var of string
+	|Lam of string * ty * exp
         |App of exp * exp
-        |Lam of string * ty * exp
-        |If of exp * exp * exp
 
 (*values*)
 type natval =
-	| VZero
-	| VSucc of natval
+	|VZero
+	|VSucc of natval
 
 type value =
-	| VTrue
-	| VFalse
-	| VNat of natval
-	| VLambda of var * ty * exp
-
+	|VTrue
+	|VFalse
+	|VNat of natval
+	|VLambda of var * ty * exp
 
 (*small step semantics*)
+type result =
+	|Val of value
+	|Step of exp
+	|Stuck
+
+let rec step (e : exp) : result = match e with
+	|True -> raise TODO
+	|False -> raise TODO
+	|If(e1,e2,e3) -> raise TODO
+	|Zero -> raise TODO
+	|Succ(e1) -> raise TODO
+	|Pred(e1) -> raise TODO
+	|IsZero(e1) -> raise TODO
+	|Var -> raise TODO
+	|Lam -> raise TODO
+	|App(e1,e2) -> raise TODO
+
+
