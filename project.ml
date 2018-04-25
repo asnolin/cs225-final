@@ -10,6 +10,10 @@ type expressions =
 
 
 (*types*)
+type ty =
+	| Bool
+	| Fun of ty * ty
+
 
 (*values*)
 
