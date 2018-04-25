@@ -4,6 +4,12 @@
         * small step semantics for 9.1 simply typed lambda calc
         * type checker for simply typed lambda calc
 *)
+
+open Util
+open StringSetMap
+
+exception NOT_FOUND
+
 (*types*)
 type ty =
 	|Bool
