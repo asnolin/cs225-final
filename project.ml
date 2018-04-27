@@ -13,86 +13,6 @@
 open Util
 open StringSetMap
 
-
-(*
-
-exception NOT_FOUND
-
-(*types*)
-type ty =
-	|Bool
-	|Nat
-	|Fun of ty * ty
-(*expressions*)
-type exp = 
-        |If of exp * exp * exp
-	|Zero
-	|Succ of exp
-	|Pred of exp
-	|IsZero of exp
-        |Var of string
-	|Lam of string * ty * exp
-        |App of exp * exp
-
-(*values*)
-type natval =
-	|VZero
-	|VSucc of natval
-
-type value =
-	|VTrue
-	|VFalse
-	|VNat of natval
-	|VLambda of value * ty * exp
-
-(*small step semantics*)
-type result =
-	|Val of value
-	|Step of exp
-	|Stuck
-
-let rec step (e : exp) : result = match e with
-	|If(e1,e2,e3) -> raise TODO
-	|Zero -> raise TODO
-	|Succ(e1) -> raise TODO
-	|Pred(e1) -> raise TODO
-	|IsZero(e1) -> raise TODO
-	|Var(x) -> raise TODO
-	|Lam (x,t1,e1)-> raise TODO
-	|App(e1,e2) -> begin match step e1 with
-        (*begin matching for e1*)
-                |Val(x) -> begin match step e2 with
-                (*begin matching for e2*)
-                        |Val(y) -> raise TODO (*could be stuck??*)
-                        |Step(e2') -> Step(App(e1, e2'))
-                        |Stuck -> Stuck
-                end (*end matching for e2*)
-                |Step(e1') -> Step(App(e1', e2))
-                |Stuck-> begin match e1 with
-                (*begin matching for redux *)
-                         |Lam(x, t1, e11) -> raise TODO
-                         |_ -> raise TODO
-                end (*end matching for redux *)
-        end (*end matching for e1*)
-
-
-(*free vars function*)
-let rec free_vars (e0: exp) : string_set = match e0 with
-        |If(e1,e2,e3) -> StringSet.union (StringSet.union (free_vars e1) (free_vars e2)) (free_vars e3)
-        |Zero -> StringSet.empty
-        |Succ(x) -> raise TODO
-        |Pred(x) -> raise TODO
-        |IsZero(x) -> raise TODO
-        |Var(x) -> raise TODO
-        |Lam(x,y,z) -> raise TODO
-        |App(e1, e2) -> raise TODO
-
-*)
-
-
-(*redoing the program starting from defs on page 72 of tapl*)
-
-
 type term = 
         |Var of string
         |Lam of string * term
@@ -103,8 +23,11 @@ type term =
 type value = 
         |AbstrVal of term
 
-let term_of_val (v0 : value) : term  = match v0 with
+let term_of_val (v0 : value) : term = match v0 with
 |AbstrVal(t) -> t
+
+let val_of_term (t0 : term) : value = 
+        AbstrVal(t0)
 
 type result=
         |Stuck
@@ -132,7 +55,7 @@ let rec subst (x : string) (v : value) (t : term) : term =
                                 if x = y
                                 then t
                                 else if StringSet.mem y (free_vars(term_of_val( v)))
-                                then raise TODO (*I think this needs alpha conversion*)
+                                then raise TODO (*I think this needs alpha conversion here*)
                                else Lam(y, (subst x v t2))
                         |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
                         end
@@ -147,11 +70,11 @@ let rec subst (x : string) (v : value) (t : term) : term =
 
 let rec eval (t0 : term) : result = match t0 with
         |Var(x) -> Val(AbstrVal(Var(x)))
-        |Lam(x,t1) -> Stuck
+        |Lam(x,t1) -> Val(AbstrVal(Lam(x,t1)))
         |App(t1, t2) -> begin match t1 with
                 |Lam(x,t1') -> begin match t2 with
                 (*matching for E-Appabs*)
-                        |Var(y) -> raise TODO(*Eval(reduce x AbstrVal(t2) t1' )  *)
+                        |Var(y) -> Eval(subst x, val_of_term t2, t1') (*should not be giving an error*)
                         |_ -> raise TODO
                 end
                 |_ -> raise TODO
