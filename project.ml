@@ -1,11 +1,15 @@
 (*Final Project by Andrew Nolin and Jared Wiggett *)
 (*Course: UVM CS 225 spring 2018*)
+
+(*to compile: make project*)
 (*TODO for checkpoint:
         * small step semantics for 9.1 simply typed lambda calc
         * type checker for simply typed lambda calc
         * small step semantics for untyped lambda calc
+        * unique_vars from ec1 to do substitution unique_vars should call free_vars
 *)
 
+(*Util and StringSetMap modules are from davdar*)
 open Util
 open StringSetMap
 
@@ -107,7 +111,7 @@ type result=
         |Val of value
         |Eval of term
 
-
+(*from ec1*)
 let rec free_vars (t0 : term) : string_set = match t0 with
         |Var(x) -> StringSet.of_list [x]
         |Lam(x,t) -> StringSet.remove x (free_vars t)
@@ -128,12 +132,17 @@ let rec subst (x : string) (v : value) (t : term) : term =
                                 if x = y
                                 then t
                                 else if StringSet.mem y (free_vars(term_of_val( v)))
-                                then raise TODO
-                                else Lam(y, (subst x v t2))
+                                then raise TODO (*I think this needs alpha conversion*)
+                               else Lam(y, (subst x v t2))
                         |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
                         end
                         else t
         else t
+
+
+
+
+
 
 
 let rec eval (t0 : term) : result = match t0 with
@@ -147,3 +156,20 @@ let rec eval (t0 : term) : result = match t0 with
                 end
                 |_ -> raise TODO
         end
+
+
+(*testing*)
+type test_result =
+        |Passed
+        |Failed
+        |Todo
+
+(*from ec1*)
+type test_block =
+        TestBlock : string * ('a * 'b) list * ('a -> 'b) * ('a -> string) * ('b -> string) -> test_block
+
+let tests = 
+        let redux : term = App(Lam("x",Var("x")),Var("y")) in
+        let redux_ans : value = AbstrVal(Var("y")) in
+        redux
+(*end testing*)
