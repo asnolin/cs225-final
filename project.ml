@@ -3,7 +3,7 @@
 (*TODO for checkpoint:
         * small step semantics for 9.1 simply typed lambda calc
         * type checker for simply typed lambda calc
-        * CONFIG MERLIN WITH .merlin file, needs source and build paths? packages?
+        * small step semantics for untyped lambda calc
 *)
 
 open Util
@@ -89,13 +89,9 @@ let rec free_vars (e0: exp) : string_set = match e0 with
 (*redoing the program starting from defs on page 72 of tapl*)
 
 
-type variable = 
-        |Var of string
-
-
 type term = 
-        |Var of variable
-        |Lam of variable * term
+        |Var of string
+        |Lam of string * term
         |App of term * term
 
 
@@ -103,14 +99,41 @@ type term =
 type value = 
         |AbstrVal of term
 
+let term_of_val (v0 : value) : term  = match v0 with
+|AbstrVal(t) -> t
 
 type result=
         |Stuck
         |Val of value
         |Eval of term
 
-let rec reduce (x : variable) (v : value) (t: term) : term = match x with
-        |Var(x) -> raise TODO
+
+let rec free_vars (t0 : term) : string_set = match t0 with
+        |Var(x) -> StringSet.of_list [x]
+        |Lam(x,t) -> StringSet.remove x (free_vars t)
+        |App(t1, t2) -> StringSet.union (free_vars t1) (free_vars t2)
+
+
+(*[x -> v]t*)
+let rec subst (x : string) (v : value) (t : term) : term =
+        if not (StringSet.equal StringSet.empty (free_vars t))
+                then if StringSet.mem x (free_vars t)
+                        then begin match t with
+                        (*for every free occurance of x in t, replace x with v*)
+                        |Var(y) -> 
+                                if x = y
+                                then t
+                                else term_of_val v 
+                        |Lam(y, t2) -> 
+                                if x = y
+                                then t
+                                else if StringSet.mem y (free_vars(term_of_val( v)))
+                                then raise TODO
+                                else Lam(y, (subst x v t2))
+                        |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
+                        end
+                        else t
+        else t
 
 
 let rec eval (t0 : term) : result = match t0 with
@@ -119,7 +142,7 @@ let rec eval (t0 : term) : result = match t0 with
         |App(t1, t2) -> begin match t1 with
                 |Lam(x,t1') -> begin match t2 with
                 (*matching for E-Appabs*)
-                        |Var(y) -> raise TODO (*  Eval(reduce ( x t2 t1'))  *)
+                        |Var(y) -> raise TODO(*Eval(reduce x AbstrVal(t2) t1' )  *)
                         |_ -> raise TODO
                 end
                 |_ -> raise TODO
