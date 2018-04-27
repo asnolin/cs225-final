@@ -9,7 +9,7 @@
         * unique_vars from ec1 to do substitution unique_vars should call free_vars
 *)
 
-(*Util and StringSetMap modules are from davdar*)
+(*Util and StringSetMap modules are from hw5 and hw3*)
 open Util
 open StringSetMap
 
@@ -163,10 +163,6 @@ type test_result =
         |Passed
         |Failed
         |Todo
-
-(*from ec1*)
-type test_block =
-        TestBlock : string * ('a * 'b) list * ('a -> 'b) * ('a -> string) * ('b -> string) -> test_block
 
 let tests = 
         let redux : term = App(Lam("x",Var("x")),Var("y")) in
