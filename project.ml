@@ -67,18 +67,22 @@ let rec subst (x : string) (v : value) (t : term) : term =
 
 
 
-
+(*does 1 step of evaluation*)
 let rec eval (t0 : term) : result = match t0 with
         |Var(x) -> Val(AbstrVal(Var(x)))
         |Lam(x,t1) -> Val(AbstrVal(Lam(x,t1)))
         |App(t1, t2) -> begin match t1 with
                 |Lam(x,t1') -> begin match t2 with
                 (*matching for E-Appabs*)
-                        |Var(y) -> Eval(subst x, val_of_term t2, t1') (*should not be giving an error*)
+                        |Var(y) -> 
+                                let s = subst x, val_of_term t2, t1' in
+                                Eval(s) (*cannot figure out how to fix this error*)
                         |_ -> raise TODO
                 end
                 |_ -> raise TODO
         end
+
+
 
 
 (*testing*)
