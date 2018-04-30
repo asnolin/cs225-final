@@ -26,8 +26,8 @@ type value =
 let term_of_val (v0 : value) : term = match v0 with
 |AbstrVal(t) -> t
 
-let val_of_term (t0 : term) : value = 
-        AbstrVal(t0)
+let val_of_term (t0 : term) : value = match t0 with
+|_ -> AbstrVal(t0)
 
 type result=
         |Stuck
@@ -43,7 +43,9 @@ let rec free_vars (t0 : term) : string_set = match t0 with
 
 (*[x -> v]t*)
 let rec subst (x : string) (v : value) (t : term) : term =
+        (*if FV(t) != {}*)
         if not (StringSet.equal StringSet.empty (free_vars t))
+                (* then if x is a member of FV(t)*)
                 then if StringSet.mem x (free_vars t)
                         then begin match t with
                         (*for every free occurance of x in t, replace x with v*)
@@ -59,8 +61,8 @@ let rec subst (x : string) (v : value) (t : term) : term =
                                else Lam(y, (subst x v t2))
                         |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
                         end
-                        else t
-        else t
+                        else t (*end if x is a member of FV(t)*)
+        else t(*end if FV(t) != {}*)
 
 
 
@@ -75,7 +77,7 @@ let rec eval (t0 : term) : result = match t0 with
                 |Lam(x,t1') -> begin match t2 with
                 (*matching for E-Appabs*)
                         |Var(y) -> 
-                                let s = subst x, val_of_term t2, t1' in
+                                let s = subst x, (val_of_term t2), t1' in
                                 Eval(s) (*cannot figure out how to fix this error*)
                         |_ -> raise TODO
                 end
@@ -91,8 +93,15 @@ type test_result =
         |Failed
         |Todo
 
-let tests = 
+let tests =
+       (*ID function*) 
         let redux : term = App(Lam("x",Var("x")),Var("y")) in
         let redux_ans : value = AbstrVal(Var("y")) in
-        redux
+        (*variable eval*)
+        let absVal : term = Var("z")in
+        let absVal_ans  = AbstrVal(Lam("x",Var("x")))in
+        (**)
+        let 
+        (**)
+
 (*end testing*)
