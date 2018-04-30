@@ -7,6 +7,7 @@
         * type checker for simply typed lambda calc
         * small step semantics for untyped lambda calc
         * unique_vars from ec1 to do substitution unique_vars should call free_vars
+        * arithmatic terms to demonstrate exceptions
 *)
 
 (*Util and StringSetMap modules are from hw5 and hw3*)
@@ -40,6 +41,9 @@ let rec free_vars (t0 : term) : string_set = match t0 with
         |Lam(x,t) -> StringSet.remove x (free_vars t)
         |App(t1, t2) -> StringSet.union (free_vars t1) (free_vars t2)
 
+    
+
+
 
 (*[x -> v]t*)
 let rec subst (x : string) (v : value) (t : term) : term =
@@ -52,15 +56,18 @@ let rec subst (x : string) (v : value) (t : term) : term =
                         |Var(y) -> 
                                 if x = y
                                 then t
-                                else term_of_val v 
+                                else term_of_val v
+
                         |Lam(y, t2) -> 
                                 if x = y
                                 then t
                                 else if StringSet.mem y (free_vars(term_of_val( v)))
                                 then raise TODO (*I think this needs alpha conversion here*)
-                               else Lam(y, (subst x v t2))
+                                else Lam(y, (subst x v t2))
+
                         |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
                         end
+
                         else t (*end if x is a member of FV(t)*)
         else t(*end if FV(t) != {}*)
 
@@ -77,8 +84,8 @@ let rec eval (t0 : term) : result = match t0 with
                 |Lam(x,t1') -> begin match t2 with
                 (*matching for E-Appabs*)
                         |Var(y) -> 
-                                let s = subst x, (val_of_term t2), t1' in
-                                Eval(s) (*cannot figure out how to fix this error*)
+                                let s = subst x (val_of_term t2) t1' in
+                                Eval(s)
                         |_ -> raise TODO
                 end
                 |_ -> raise TODO
@@ -99,9 +106,9 @@ let tests =
         let redux_ans : value = AbstrVal(Var("y")) in
         (*variable eval*)
         let absVal : term = Var("z")in
-        let absVal_ans  = AbstrVal(Lam("x",Var("x")))in
+        let absVal_ans : value = AbstrVal(Lam("x",Var("x")))in
         (**)
-        let 
         (**)
+redux
 
 (*end testing*)
