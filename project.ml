@@ -8,6 +8,7 @@
         * small step semantics for untyped lambda calc
         * unique_vars from ec1 to do substitution unique_vars should call free_vars
         * arithmatic terms to demonstrate exceptions
+        * types need [@@deriving show {with_path = true/false}]
 *)
 
 (*Util and StringSetMap modules are from hw5 and hw3*)
@@ -18,7 +19,7 @@ type term =
         |Var of string
         |Lam of string * term
         |App of term * term
-
+        [@@deriving show]
 
 
 type value = 
@@ -34,7 +35,7 @@ type result=
         |Stuck
         |Val of value
         |Eval of term
-
+        [@@deriving show]
 (*from ec1*)
 let rec free_vars (t0 : term) : string_set = match t0 with
         |Var(x) -> StringSet.of_list [x]
@@ -101,14 +102,19 @@ type test_result =
         |Todo
 
 let tests =
-       (*ID function*) 
+        (*ID function*) 
         let redux : term = App(Lam("x",Var("x")),Var("y")) in
-        let redux_ans : value = AbstrVal(Var("y")) in
+        let redux_ans : result = Val(AbstrVal(Var("y"))) in
         (*variable eval*)
         let absVal : term = Var("z")in
-        let absVal_ans : value = AbstrVal(Lam("x",Var("x")))in
-        (**)
-        (**)
-redux
+        let absVal_ans : result = Val(AbstrVal(Lam("x",Var("x")))) in
+        (*the test block*)
+        let step_test : Util.test_block = 
+                TestBlock
+                ("Step",
+                [redux  ,redux_ans
+                ;absVal ,absVal_ans
+                ],eval, (=), show_term, show_result) in
+        run_tests[step_test];
 
 (*end testing*)
