@@ -152,22 +152,17 @@ let rec solve (n0 : number) : number = match n0 with
         |Add(n1, n2) -> begin match n1 with
                 |Zero -> n2
                 |Succ(n1') -> raise TODO
-                |Pred(n1') -> begin match n2 with
-                |_ -> solve n1
-                        |Zero -> solve Add(n1', sub1 n2)
-                        |Succ(n2') -> solve Add(n1' , n2')
-                        |Pred(n2') -> solve Add(n1' , sub1 n2')
-                        | _-> solve n2
-                end (*match n2*)
-        end(*match n1*)
+                |Pred(n1') -> raise TODO
+                |_ -> solve n1 
+        end (*match n1*)
+   
 
         |Sub(n1,n2) -> begin match n2 with
                 |Zero -> n1
-                |Succ(n2') -> 
-                |Pred(n2') -> 
+                |Succ(n2') -> raise TODO
+                |Pred(n2') -> raise TODO
+                |_->raise TODO
         end(*match n1*) 
-        |Mult(n1,n2) -> 
-        |Div(n1,n2) ->
-        |Sqrt(op') -> 
-
-let rec solve
+        |Mult(n1,n2) -> raise TODO
+        |Div(n1,n2) ->raise TODO
+        |Sqrt(op') -> raise TODO
