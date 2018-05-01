@@ -117,4 +117,52 @@ let tests =
                 ],eval, (=), show_term, show_result) in
         run_tests[step_test];
 
+
+        
 (*end testing*)
+
+(*shows divide by zero exception*)
+exception DIV_BY_0
+exception UNREAL_NUMBER
+
+type number = 
+        |Zero
+        |Succ of number
+        |Pred of number 
+        |Add of number * number
+        |Sub of number * number
+        |Mult of number * number
+        |Div of number * number
+        |Sqrt of number
+
+let add1 (n : number) : number = match n with
+        |Pred(n') -> n'
+        |_-> Succ(n)
+
+let sub1 (n : number) : number = match n with
+        |Succ(n') -> n'
+        |_->Pred(n)
+
+
+
+let rec solve (n0 : number) : number = match n0 with
+        |Add(n1, n2) -> begin match n1 with
+                |Zero -> n2
+                |Succ(n1') -> solve Add(n1', add1 n2)
+                |Pred(n1') -> begin match n2 with
+                        |Zero -> solve Add(n1', sub1 n2)
+                        |Succ(n2') -> solve Add(n1' , n2')
+                        |Pred(n2') -> solve Add(n1' , sub1 n2')
+                end (*match n2*)
+        end(*match n1*)
+
+        |Sub(n1,n2) -> begin match n2 with
+                |Zero -> n1
+                |Succ(n2') -> 
+                |Pred(n2') -> 
+        end(*match n1*) 
+        |Mult(n1,n2) -> 
+        |Div(n1,n2) ->
+        |Sqrt(op') -> 
+
+let rec solve
