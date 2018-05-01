@@ -14,22 +14,21 @@
 (*Util and StringSetMap modules are from hw5 and hw3*)
 open Util
 open StringSetMap
+type ty =
+        |Bool
+        |Fun of ty * ty
+        |TError
+        [@@deriving show]
 
 type term = 
 	|True
 	|False
-	|If of exp * exp * exp
+	|If of term * term * term
         |Var of string
         |Lam of string * ty * term
         |App of term * term
-	|Error of TError
+	|Error of ty
         [@@deriving show]
-
-type ty =
-	|Bool
-	|Fun of ty * ty
-	|TError
-
 
 type value = 
         |VTrue
@@ -37,14 +36,14 @@ type value =
 	|AbstrVal of term
 
 let term_of_val (v0 : value) : term = match v0 with
-|AbstrVal(t) -> t
-|VTrue -> True
-|VFalse -> False
+	|AbstrVal(t) -> t
+	|VTrue -> True
+	|VFalse -> False
 
 let val_of_term (t0 : term) : value = match t0 with
-|True -> VTrue
-|False -> VFalse
-|_ -> AbstrVal(t0)
+	|True -> VTrue
+	|False -> VFalse
+	|_ -> AbstrVal(t0)
 
 type result=
         |Stuck
@@ -59,9 +58,9 @@ let rec free_vars (t0 : term) : string_set = match t0 with
 	|If(e1,e2,e3) ->
 		StringSet.union (StringSet.union (free_vars e1) (free_vars e2)) (free_vars e3)
         |Var(x) -> StringSet.of_list [x]
-        |Lam(x,t) -> StringSet.remove x (free_vars t)
+        |Lam(x,ty,t) -> StringSet.remove x (free_vars t)
         |App(t1, t2) -> StringSet.union (free_vars t1) (free_vars t2)
-	|Error -> StringSet.empty
+	|Error(ty) -> StringSet.empty
 
     
 
@@ -83,15 +82,15 @@ let rec subst (x : string) (v : value) (t : term) : term =
                                 then t
                                 else term_of_val v
 
-                        |Lam(y, t2) -> 
+                        |Lam(y,ty, t2) -> 
                                 if x = y
                                 then t
                                 else if StringSet.mem y (free_vars(term_of_val( v)))
                                 then raise TODO (*I think this needs alpha conversion here*)
-                                else Lam(y, (subst x v t2))
+                                else Lam(y,ty, (subst x v t2))
 
                         |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
-                        |Error -> Error
+                        |Error(ty) -> Error(ty)
 			end
 
                         else t (*end if x is a member of FV(t)*)
@@ -104,16 +103,16 @@ let rec subst (x : string) (v : value) (t : term) : term =
 
 (*does 1 step of evaluation*)
 let rec eval (t0 : term) : result = match t0 with
-	|True -> Stuck
-	|False -> Stuck
+	|True -> Val(Vtrue)
+	|False -> Val(VFalse)
 	|If(e1,e2,e3) -> begin match e1 with
 		|True -> e2
 		|False -> e3
 		|_ -> Stuck
         |Var(x) -> Val(AbstrVal(Var(x)))
-        |Lam(x,t1) -> Val(AbstrVal(Lam(x,t1)))
+        |Lam(x,ty,t1) -> Val(AbstrVal(Lam(x,ty,t1)))
         |App(t1, t2) -> begin match t1 with
-                |Lam(x,t1') -> begin match t2 with
+                |Lam(x,ty,t1') -> begin match t2 with
                 (*matching for E-Appabs*)
                         |Var(y) -> 
                                 let s = subst x (val_of_term t2) t1' in
@@ -124,7 +123,7 @@ let rec eval (t0 : term) : result = match t0 with
                 |_ -> raise TODO
 	|Error -> Stuck
         end
-
+        |Error(ty) -> Stuck
 
 
 
@@ -136,11 +135,11 @@ type test_result =
 
 let tests =
         (*ID function*) 
-        let redux : term = App(Lam("x",Var("x")),Var("y")) in
+        let redux : term = App(Lam("x",Bool,Var("x")),Var("y")) in
         let redux_ans : result = Val(AbstrVal(Var("y"))) in
         (*variable eval*)
         let absVal : term = Var("z")in
-        let absVal_ans : result = Val(AbstrVal(Lam("x",Var("x")))) in
+        let absVal_ans : result = Val(AbstrVal(Lam("x",Bool,Var("x")))) in
         (*the test block*)
         let step_test : Util.test_block = 
                 TestBlock
@@ -154,9 +153,12 @@ let tests =
         
 (*end testing*)
 
+
+
 (*shows divide by zero exception*)
 exception DIV_BY_0
 exception IMAGINARY
+
 
 type number = 
         |Zero
@@ -179,28 +181,40 @@ let rec solve (n0 : number) : number = match n0 with
         |Zero -> Zero
         |Succ(n0') -> add1 n0'
         |Pred(n0') -> sub1 n0'
-        |Add(n1, n2) -> begin match solve n2 with
+        |Add(n1, n2) -> begin match n2 with
                 |Zero -> solve n1
-                |Succ(n2') -> solve(Add(Zero,Zero))
-                |Pred(n2') -> raise TODO
-                |_ -> Add(n1 , n2)
+                |Succ(n2') -> solve(Add(add1 n1,n2'))
+                |Pred(n2') -> solve(Add(sub1 n1,n2'))
+                |_ -> solve(Add(n1 , solve n2))
 
-        end (*match n1*)
+        end (*match Add*)
    
 
         |Sub(n1,n2) -> begin match n2 with
                 |Zero -> solve n1
                 |Succ(n2') -> solve (Sub(sub1 n1, n2'))
-                |Pred(n2') -> solve (Sub(add1 n1, n2'))
-                |_ -> Sub(n1, solve n2)
-        end(*match n1*) 
+                |Pred(n2') -> solve (Sub(add1 n1,  n2'))
+                |_ -> solve(Sub(n1, solve n2))
+        end(*match Sub*)
+
         |Mult(n1,n2) -> begin match n2 with
-		|Zero -> Zero
-		|Succ(n2') -> solve Add (solve Mult(n1, n2'), n1)
-		|Pred(n2') -> solve Sub (solve Mult(n1, n2'), n1)
-		|_ -> solve Mult(n1, solve n2)
-	end
+                |Zero -> Zero
+                |Succ(n2') -> 
+                        let x = solve(Mult(n1,n2')) in
+                        solve(Add(x,n1))
+                |Pred(n2') -> 
+                        let x = solve(Mult(n1, n2')) in
+                        solve(Sub(x,n1))           
+                                
+                |_->solve(Mult(n1,solve n2))
+        end(*match Mult*)
+
         |Div(n1,n2) -> begin match n2 with
-		|Zero -> raise DIV_BY_0
-		|Succ(n2') -> 
-	end
+                |Zero -> raise DIV_BY_0
+                |Succ(n2') -> raise TODO
+                |Pred(n2') -> raise TODO
+                |_->
+                        let x = solve n2 in
+                        solve(Div(n1,x))
+        end(*match Div*)
+
