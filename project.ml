@@ -9,6 +9,8 @@
         * unique_vars from ec1 to do substitution unique_vars should call free_vars
         * arithmatic terms to demonstrate exceptions
         * types need [@@deriving show {with_path = true/false}]
+        * Mult needs pattern matching on n1
+        * complete Div
 *)
 
 (*Util and StringSetMap modules are from hw5 and hw3*)
@@ -172,6 +174,25 @@ type number =
         |Mult of number * number
         |Div of number * number
 
+
+(*don't call genPos or genNeg to generate a positive number,
+ * rather call genNum which calls them based on n's sign*)
+let rec  genPos (n : int) (x : number) : number=
+        if not( n = 0)
+        then genPos (n-1) (Succ(x))
+        else x
+let rec genNeg (n : int) (x : number) : number = 
+        if not(n=0)
+        then genNeg (n+1) (Pred(x))
+        else x
+
+let genNum(n : int) : number = 
+        if(n > 0)
+        then genPos n Zero
+        else if (n < 0)
+        then genNeg n Zero
+        else Zero
+
 let add1 (n : number) : number = match n with
         |Pred(n') -> n'
         |_-> Succ(n)
@@ -203,7 +224,7 @@ let rec solve (n0 : number) : number = match n0 with
                         let x = solve n2 in
                         solve(Sub(n1, x))
         end(*match Sub*)
-
+        (*Mult needs pattern matching on n1*)
         |Mult(n1,n2) -> begin match n2 with
                 |Zero -> Zero
                 |Succ(n2') -> 
