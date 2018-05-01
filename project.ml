@@ -16,10 +16,19 @@ open Util
 open StringSetMap
 
 type term = 
+	|True
+	|False
+	|If of exp * exp * exp
         |Var of string
-        |Lam of string * term
+        |Lam of string * ty * term
         |App of term * term
+	|Error of TError
         [@@deriving show]
+
+type ty =
+	|Bool
+	|Fun of ty * ty
+	|TError
 
 
 type value = 
@@ -38,9 +47,14 @@ type result=
         [@@deriving show]
 (*from ec1*)
 let rec free_vars (t0 : term) : string_set = match t0 with
+	|True -> StringSet.empty
+	|False -> StringSet.empty
+	|If(e1,e2,e3) ->
+		StringSet.union (StringSet.union (free_vars e1) (free_vars e2)) (free_vars e3)
         |Var(x) -> StringSet.of_list [x]
         |Lam(x,t) -> StringSet.remove x (free_vars t)
         |App(t1, t2) -> StringSet.union (free_vars t1) (free_vars t2)
+	|Error -> StringSet.empty
 
     
 
@@ -54,7 +68,10 @@ let rec subst (x : string) (v : value) (t : term) : term =
                 then if StringSet.mem x (free_vars t)
                         then begin match t with
                         (*for every free occurance of x in t, replace x with v*)
-                        |Var(y) -> 
+                        |True -> True
+			|False -> False
+			|If(e1,e2,e3) -> If((subst x y e1), (subst x y e2), (subst x y e3))
+			|Var(y) -> 
                                 if x = y
                                 then t
                                 else term_of_val v
@@ -67,7 +84,8 @@ let rec subst (x : string) (v : value) (t : term) : term =
                                 else Lam(y, (subst x v t2))
 
                         |App(t2, t3) -> App((subst x v t2), (subst x v t3)) 
-                        end
+                        |Error -> Error
+			end
 
                         else t (*end if x is a member of FV(t)*)
         else t(*end if FV(t) != {}*)
@@ -181,3 +199,4 @@ let rec solve (n0 : number) : number = match n0 with
                 |Pred(n2') -> raise TODO
                 |_->solve(Div(n1,solve n2))
         end(*match Div*)
+
