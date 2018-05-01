@@ -16,10 +16,19 @@ open Util
 open StringSetMap
 
 type term = 
+	|True
+	|False
+	|If of exp * exp * exp
         |Var of string
-        |Lam of string * term
+        |Lam of string * ty * term
         |App of term * term
+	|Error of TError
         [@@deriving show]
+
+type ty =
+	|Bool
+	|Fun of ty * ty
+	|TError
 
 
 type value = 
@@ -38,9 +47,14 @@ type result=
         [@@deriving show]
 (*from ec1*)
 let rec free_vars (t0 : term) : string_set = match t0 with
+	|True -> StringSet.empty
+	|False -> StringSet.empty
+	|If(e1,e2,e3) ->
+		StringSet.union (StringSet.union (free_vars e1) (free_vars e2)) (free_vars e3)
         |Var(x) -> StringSet.of_list [x]
         |Lam(x,t) -> StringSet.remove x (free_vars t)
         |App(t1, t2) -> StringSet.union (free_vars t1) (free_vars t2)
+	|Error -> StringSet.empty
 
     
 
@@ -133,7 +147,6 @@ type number =
         |Sub of number * number
         |Mult of number * number
         |Div of number * number
-        |Sqrt of number
 
 let add1 (n : number) : number = match n with
         |Pred(n') -> n'
@@ -157,11 +170,18 @@ let rec solve (n0 : number) : number = match n0 with
    
 
         |Sub(n1,n2) -> begin match n2 with
-                |Zero -> n1
-                |Succ(n2') -> solve (Sub(n1, sub1 n2))
-                |Pred(n2') -> solve (Sub(n1, add1 n2))
+                |Zero -> solve n1
+                |Succ(n2') -> solve (Sub(sub1 n1, n2'))
+                |Pred(n2') -> solve (Sub(add1 n1, n2'))
                 |_ -> Sub(n1, solve n2)
         end(*match n1*) 
-        |Mult(n1,n2) -> raise TODO
-        |Div(n1,n2) ->raise TODO
-        |Sqrt(op') -> raise TODO
+        |Mult(n1,n2) -> begin match n2 with
+		|Zero -> Zero
+		|Succ(n2') -> solve Add (solve Mult(n1, n2'), n1)
+		|Pred(n2') -> solve Sub (solve Mult(n1, n2'), n1)
+		|_ -> solve Mult(n1, solve n2)
+	end
+        |Div(n1,n2) -> begin match n2 with
+		|Zero -> raise DIV_BY_0
+		|Succ(n2') -> 
+	end
