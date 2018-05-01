@@ -31,24 +31,25 @@ type term =
         [@@deriving show]
 
 type value = 
-        |AbstrVal of term
         |VTrue
-        |VFalse
-        [@@deriving show]
+	|VFalse
+	|AbstrVal of term
 
 let term_of_val (v0 : value) : term = match v0 with
-        |AbstrVal(t) -> t
-        |VTrue -> True
-        |VFalse -> False
+	|AbstrVal(t) -> t
+	|VTrue -> True
+	|VFalse -> False
+
 let val_of_term (t0 : term) : value = match t0 with
-        |True -> VTrue
-        |False -> VFalse
-        |_ -> AbstrVal(t0)
+	|True -> VTrue
+	|False -> VFalse
+	|_ -> AbstrVal(t0)
 
 type result=
         |Stuck
         |Val of value
         |Eval of term
+	|RError
         [@@deriving show]
 (*from ec1*)
 let rec free_vars (t0 : term) : string_set = match t0 with
@@ -102,9 +103,12 @@ let rec subst (x : string) (v : value) (t : term) : term =
 
 (*does 1 step of evaluation*)
 let rec eval (t0 : term) : result = match t0 with
-        |True -> Val(VTrue)
-        |False -> Val(VFalse)
-        |If(t1,t2,t3) -> raise TODO
+	|True -> Val(Vtrue)
+	|False -> Val(VFalse)
+	|If(e1,e2,e3) -> begin match e1 with
+		|True -> e2
+		|False -> e3
+		|_ -> Stuck
         |Var(x) -> Val(AbstrVal(Var(x)))
         |Lam(x,ty,t1) -> Val(AbstrVal(Lam(x,ty,t1)))
         |App(t1, t2) -> begin match t1 with
@@ -115,7 +119,9 @@ let rec eval (t0 : term) : result = match t0 with
                                 Eval(s)
                         |_ -> raise TODO
                 end
+		|Error -> RError
                 |_ -> raise TODO
+	|Error -> Stuck
         end
         |Error(ty) -> Stuck
 
