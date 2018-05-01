@@ -128,7 +128,7 @@ exception IMAGANIRY
 type number = 
         |Zero
         |Succ of number
-        |Pred of number 
+        |Pred of number
         |Add of number * number
         |Sub of number * number
         |Mult of number * number
@@ -143,17 +143,15 @@ let sub1 (n : number) : number = match n with
         |Succ(n') -> n'
         |_->Pred(n)
 
-
-
 let rec solve (n0 : number) : number = match n0 with
         |Zero -> Zero
         |Succ(n0') -> add1 n0'
         |Pred(n0') -> sub1 n0'
-        |Add(n1, n2) -> begin match n1 with
-                |Zero -> n2
-                |Succ(n1') -> raise TODO
-                |Pred(n1') -> raise TODO
-                |_ -> solve n1 
+        |Add(n1, n2) -> begin match solve n2 with
+                |Zero -> solve n1
+                |Succ(n2') -> solve(Add(Zero,Zero))
+                |Pred(n2') -> raise TODO
+                |_ -> Add(n1 , n2)
         end (*match n1*)
    
 
