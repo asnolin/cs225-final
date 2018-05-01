@@ -123,7 +123,7 @@ let tests =
 
 (*shows divide by zero exception*)
 exception DIV_BY_0
-exception UNREAL_NUMBER
+exception IMAGANIRY
 
 type number = 
         |Zero
@@ -146,13 +146,18 @@ let sub1 (n : number) : number = match n with
 
 
 let rec solve (n0 : number) : number = match n0 with
+        |Zero -> Zero
+        |Succ(n0') -> add1 n0'
+        |Pred(n0') -> sub1 n0'
         |Add(n1, n2) -> begin match n1 with
                 |Zero -> n2
-                |Succ(n1') -> solve Add(n1', add1 n2)
+                |Succ(n1') -> raise TODO
                 |Pred(n1') -> begin match n2 with
+                |_ -> solve n1
                         |Zero -> solve Add(n1', sub1 n2)
                         |Succ(n2') -> solve Add(n1' , n2')
                         |Pred(n2') -> solve Add(n1' , sub1 n2')
+                        | _-> solve n2
                 end (*match n2*)
         end(*match n1*)
 
