@@ -3,3 +3,5 @@
 *.log
 _build/
 *.swp
+*.out
+divby0*

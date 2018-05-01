@@ -108,7 +108,7 @@ let rec eval (t0 : term) : result = match t0 with
 	|If(e1,e2,e3) -> begin match e1 with
                 |True -> Eval(e2)
 		|False -> Eval(e3)
-		|_ -> Stuck
+		|_ -> RError
         end
         |Var(x) -> Val(AbstrVal(Var(x)))
         |Lam(x,ty,t1) -> Val(AbstrVal(Lam(x,ty,t1)))
@@ -120,10 +120,13 @@ let rec eval (t0 : term) : result = match t0 with
                                 Eval(s)
                         |_ -> raise TODO
                 end
-		|Error(ty) -> Stuck
-                |_ -> raise TODO
+		|Error(ty) -> RError
+                |_ -> begin match t1 with
+                        |Error(ty) -> RError
+                        |_->raise TODO
+                end
         end
-        |Error(ty) -> Stuck
+        |Error(ty) -> RError
 
 
 
@@ -158,7 +161,7 @@ let tests =
 (*shows divide by zero exception*)
 exception DIV_BY_0
 exception IMAGINARY
-
+exception NAN
 
 type number = 
         |Zero
