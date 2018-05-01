@@ -125,6 +125,7 @@ let tests =
 exception DIV_BY_0
 exception IMAGINARY
 
+
 type number = 
         |Zero
         |Succ of number
@@ -133,7 +134,6 @@ type number =
         |Sub of number * number
         |Mult of number * number
         |Div of number * number
-        |Sqrt of number
 
 let add1 (n : number) : number = match n with
         |Pred(n') -> n'
@@ -147,21 +147,37 @@ let rec solve (n0 : number) : number = match n0 with
         |Zero -> Zero
         |Succ(n0') -> add1 n0'
         |Pred(n0') -> sub1 n0'
-        |Add(n1, n2) -> begin match solve n2 with
+        |Add(n1, n2) -> begin match n2 with
                 |Zero -> solve n1
-                |Succ(n2') -> solve(Add(Zero,Zero))
-                |Pred(n2') -> raise TODO
-                |_ -> Add(n1 , n2)
+                |Succ(n2') -> solve(Add(add1 n1,n2'))
+                |Pred(n2') -> solve(Add(sub1 n1,n2'))
+                |_ -> solve(Add(n1 , solve n2))
 
-        end (*match n1*)
+        end (*match Add*)
    
 
         |Sub(n1,n2) -> begin match n2 with
-                |Zero -> n1
-                |Succ(n2') -> solve (Sub(n1, sub1 n2))
-                |Pred(n2') -> solve (Sub(n1, add1 n2))
-                |_ -> Sub(n1, solve n2)
-        end(*match n1*) 
-        |Mult(n1,n2) -> raise TODO
-        |Div(n1,n2) ->raise TODO
-        |Sqrt(op') -> raise TODO
+                |Zero -> solve n1
+                |Succ(n2') -> solve (Sub(sub1 n1, n2'))
+                |Pred(n2') -> solve (Sub(add1 n1,  n2'))
+                |_ -> solve(Sub(n1, solve n2))
+        end(*match Sub*)
+
+        |Mult(n1,n2) -> begin match n2 with
+                |Zero -> Zero
+                |Succ(n2') -> 
+                        let x = solve(Mult(n1,n2')) in
+                        solve(Add(x,n1))
+                |Pred(n2') -> 
+                        let x = solve(Mult(n1, n2')) in
+                        solve(Sub(x,n1))           
+                                
+                |_->solve(Mult(n1,solve n2))
+        end(*match Mult*)
+
+        |Div(n1,n2) -> begin match n2 with
+                |Zero -> raise DIV_BY_0
+                |Succ(n2') -> raise TODO
+                |Pred(n2') -> raise TODO
+                |_->solve(Div(n1,solve n2))
+        end(*match Div*)
