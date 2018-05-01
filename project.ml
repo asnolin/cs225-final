@@ -18,7 +18,7 @@ type ty =
         |Bool
         |Fun of ty * ty
         |TError
-
+        [@@deriving show]
 
 type term = 
 	|True
@@ -34,6 +34,7 @@ type value =
         |AbstrVal of term
         |VTrue
         |VFalse
+        [@@deriving show]
 
 let term_of_val (v0 : value) : term = match v0 with
         |AbstrVal(t) -> t
@@ -145,6 +146,8 @@ let tests =
 
         
 (*end testing*)
+
+
 
 (*shows divide by zero exception*)
 exception DIV_BY_0
