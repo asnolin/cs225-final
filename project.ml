@@ -34,7 +34,7 @@ type value =
         |VTrue
 	|VFalse
 	|AbstrVal of term
-
+        [@@deriving show]
 let term_of_val (v0 : value) : term = match v0 with
 	|AbstrVal(t) -> t
 	|VTrue -> True
@@ -103,12 +103,13 @@ let rec subst (x : string) (v : value) (t : term) : term =
 
 (*does 1 step of evaluation*)
 let rec eval (t0 : term) : result = match t0 with
-	|True -> Val(Vtrue)
+	|True -> Val(VTrue)
 	|False -> Val(VFalse)
 	|If(e1,e2,e3) -> begin match e1 with
-		|True -> e2
-		|False -> e3
+                |True -> Eval(e2)
+		|False -> Eval(e3)
 		|_ -> Stuck
+        end
         |Var(x) -> Val(AbstrVal(Var(x)))
         |Lam(x,ty,t1) -> Val(AbstrVal(Lam(x,ty,t1)))
         |App(t1, t2) -> begin match t1 with
@@ -119,9 +120,8 @@ let rec eval (t0 : term) : result = match t0 with
                                 Eval(s)
                         |_ -> raise TODO
                 end
-		|Error -> RError
+		|Error(ty) -> Stuck
                 |_ -> raise TODO
-	|Error -> Stuck
         end
         |Error(ty) -> Stuck
 
