@@ -179,7 +179,9 @@ let rec solve (n0 : number) : number = match n0 with
                 |Zero -> solve n1
                 |Succ(n2') -> solve(Add(add1 n1,n2'))
                 |Pred(n2') -> solve(Add(sub1 n1,n2'))
-                |_ -> solve(Add(n1 , solve n2))
+                |_ -> 
+                        let x = solve n2 in
+                        solve(Add(n1 , x))
 
         end (*match Add*)
    
@@ -188,7 +190,9 @@ let rec solve (n0 : number) : number = match n0 with
                 |Zero -> solve n1
                 |Succ(n2') -> solve (Sub(sub1 n1, n2'))
                 |Pred(n2') -> solve (Sub(add1 n1,  n2'))
-                |_ -> solve(Sub(n1, solve n2))
+                |_ ->
+                        let x = solve n2 in
+                        solve(Sub(n1, x))
         end(*match Sub*)
 
         |Mult(n1,n2) -> begin match n2 with
@@ -200,12 +204,20 @@ let rec solve (n0 : number) : number = match n0 with
                         let x = solve(Mult(n1, n2')) in
                         solve(Sub(x,n1))           
                                 
-                |_->solve(Mult(n1,solve n2))
+                |_->
+                        let x = solve n2 in
+                        solve(Mult(n1,x))
         end(*match Mult*)
 
         |Div(n1,n2) -> begin match n2 with
                 |Zero -> raise DIV_BY_0
-                |Succ(n2') -> raise TODO
+                |Succ(n2') -> 
+                        begin match n1 with
+                        |Zero -> Zero
+                        |Succ(n1') -> raise TODO
+                        |Pred(n1') -> raise TODO
+                        |_-> raise TODO
+                        end
                 |Pred(n2') -> raise TODO
                 |_->
                         let x = solve n2 in
