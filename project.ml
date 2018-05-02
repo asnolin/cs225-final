@@ -200,57 +200,60 @@ let add1 (n : number) : number = match n with
 let sub1 (n : number) : number = match n with
         |Succ(n') -> n'
         |_->Pred(n)
-
+(*all need to match on n1 as well as n2*)
 let rec solve (n0 : number) : number = match n0 with
-        |Zero -> Zero
-        |Succ(n0') -> add1 n0'
-        |Pred(n0') -> sub1 n0'
-        |Add(n1, n2) -> begin match n2 with
-                |Zero -> solve n1
-                |Succ(n2') -> solve(Add(add1 n1,n2'))
-                |Pred(n2') -> solve(Add(sub1 n1,n2'))
-                |_ -> 
-                        let x = solve n2 in
-                        solve(Add(n1 , x))
+        |Add(n1, n2) -> begin match n1 with
+                |Zero -> solve n2
+                |Succ(n1') -> begin match n2 with
+                        |Zero -> n1
+                        |Succ(n2') -> solve(Add(add1 n1, n2'))
+                        |Pred(n2') -> solve(Add(n1',n2' ))
+                        |_-> let x = solve n2 in
+                                solve(Add(n1,x))
+                        end(*match n2 in Add*)
 
-        end (*match Add*)
+                |Pred(n1') -> begin match n2 with
+                        |Zero -> n1
+                        |Succ(n2') -> solve(Add(n1',n2'))
+                        |Pred(n2') -> solve(Add(n1,n2))
+                        |_-> let x = solve n1 in 
+                                solve(Add(x,n2))
+                        end(*match n2 in Add*)
+
+                |_ -> 
+                        let x = solve n1 in
+                        solve(Add(x, n2))
+
+                end (*match n1 in Add*)
    
 
-        |Sub(n1,n2) -> begin match n2 with
+        |Sub(n1,n2) -> begin match n1 with
                 |Zero -> solve n1
-                |Succ(n2') -> solve (Sub(sub1 n1, n2'))
-                |Pred(n2') -> solve (Sub(add1 n1,  n2'))
-                |_ ->
-                        let x = solve n2 in
-                        solve(Sub(n1, x))
-        end(*match Sub*)
-        (*Mult needs pattern matching on n1*)
-        |Mult(n1,n2) -> begin match n2 with
-                |Zero -> Zero
-                |Succ(n2') -> 
-                        let x = solve(Mult(n1,n2')) in
-                        solve(Add(x,n1))
-                |Pred(n2') -> 
-                        let x = solve(Mult(n1, n2')) in
-                        solve(Sub(x,n1))           
-                                
-                |_->
-                        let x = solve n2 in
-                        solve(Mult(n1,x))
-        end(*match Mult*)
+                |Succ(n1') -> raise TODO
+                |Pred(n1') -> raise TODO
+                |_ -> let x = solve n1 in
+                        solve(Sub(x, n2))
+                end(*match n1 in Sub*)
 
-        |Div(n1,n2) -> begin match n2 with
+        |Mult(n1,n2) -> begin match n1 with
+                |Zero -> Zero
+                |Succ(n1') -> raise TODO
+                |Pred(n1') -> raise TODO                               
+                |_-> let x = solve n1 in
+                        solve(Mult(x,n2))
+                end(*match n1 in Mult*)
+
+        |Div(n1,n2) -> begin match n1 with
                 |Zero -> raise DIV_BY_0
-                |Succ(n2') -> 
+                |Succ(n1') -> 
                         begin match n1 with
                         |Zero -> Zero
-                        |Succ(n1') -> raise TODO
-                        |Pred(n1') -> raise TODO
+                        |Succ(n2') -> raise TODO
+                        |Pred(n2') -> raise TODO
                         |_-> raise TODO
                         end
-                |Pred(n2') -> raise TODO
-                |_->
-                        let x = solve n2 in
-                        solve(Div(n1,x))
-        end(*match Div*)
-
+                |Pred(n1') -> raise TODO
+                |_-> let x = solve n1 in
+                        solve(Div(x,n2))
+                end(*match n1 in Div*)
+        |_-> n0(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
