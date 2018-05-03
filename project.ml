@@ -200,6 +200,7 @@ let add1 (n : number) : number = match n with
 let sub1 (n : number) : number = match n with
         |Succ(n') -> n'
         |_->Pred(n)
+
 (*all need to match on n1 as well as n2*)
 let rec solve (n0 : number) : number = match n0 with
         |Add(n1, n2) -> begin match n1 with
@@ -227,16 +228,16 @@ let rec solve (n0 : number) : number = match n0 with
    
 
         |Sub(n1,n2) -> begin match n1 with
-                |Zero -> solve n1
+                |Zero -> solve n2
                 |Succ(n1') -> begin match n2 with
-                        |Zero -> n1
+                        |Zero -> solve n1
                         |Succ(n2') -> solve(Sub(n1',n2'))
                         |Pred(n2') -> solve(Sub(add1 n1,n2'))
                         |_-> let x = solve n2 in
                                 solve(Sub(n1,x))
                         end(*match n2 in sub*)
                 |Pred(n1') -> begin match n2 with
-                        |Zero -> raise TODO
+                        |Zero -> solve n1
                         |Succ(n2') -> raise TODO
                         |Pred(n2') -> raise TODO
                         |_-> let x = solve n2 in 
@@ -249,7 +250,7 @@ let rec solve (n0 : number) : number = match n0 with
         |Mult(n1,n2) -> begin match n1 with
                 |Zero -> Zero
                 |Succ(n1') -> raise TODO
-                |Pred(n1') -> raise TODO                               
+                |Pred(n1') -> raise TODO
                 |_-> let x = solve n1 in
                         solve(Mult(x,n2))
                 end(*match n1 in Mult*)
