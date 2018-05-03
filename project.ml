@@ -215,13 +215,12 @@ let rec solve (n0 : number) : number = match n0 with
                 |Pred(n1') -> begin match n2 with
                         |Zero -> n1
                         |Succ(n2') -> solve(Add(n1',n2'))
-                        |Pred(n2') -> solve(Add(n1,n2))
-                        |_-> let x = solve n1 in 
-                                solve(Add(x,n2))
+                        |Pred(n2') -> solve(Add(sub1 n1,n2'))
+                        |_-> let x = solve n2 in 
+                                solve(Add(n1,x))
                         end(*match n2 in Add*)
 
-                |_ -> 
-                        let x = solve n1 in
+                |_ -> let x = solve n1 in
                         solve(Add(x, n2))
 
                 end (*match n1 in Add*)
@@ -229,8 +228,20 @@ let rec solve (n0 : number) : number = match n0 with
 
         |Sub(n1,n2) -> begin match n1 with
                 |Zero -> solve n1
-                |Succ(n1') -> raise TODO
-                |Pred(n1') -> raise TODO
+                |Succ(n1') -> begin match n2 with
+                        |Zero -> n1
+                        |Succ(n2') -> solve(Sub(n1',n2'))
+                        |Pred(n2') -> solve(Sub(add1 n1,n2'))
+                        |_-> let x = solve n2 in
+                                solve(Sub(n1,x))
+                        end(*match n2 in sub*)
+                |Pred(n1') -> begin match n2 with
+                        |Zero -> raise TODO
+                        |Succ(n2') -> raise TODO
+                        |Pred(n2') -> raise TODO
+                        |_-> let x = solve n2 in 
+                                solve(Sub(n1,x))
+                        end(*mathc n2 in sub*)
                 |_ -> let x = solve n1 in
                         solve(Sub(x, n2))
                 end(*match n1 in Sub*)
@@ -244,10 +255,10 @@ let rec solve (n0 : number) : number = match n0 with
                 end(*match n1 in Mult*)
 
         |Div(n1,n2) -> begin match n1 with
-                |Zero -> raise DIV_BY_0
+                |Zero -> raise TODO
                 |Succ(n1') -> 
-                        begin match n1 with
-                        |Zero -> Zero
+                        begin match n2 with
+                        |Zero -> raise DIV_BY_0
                         |Succ(n2') -> raise TODO
                         |Pred(n2') -> raise TODO
                         |_-> raise TODO
