@@ -7,3 +7,6 @@ type term =
         |Lam of string * term
         |App of term * term
 
+type value =
+        |VLam of string * term
+
