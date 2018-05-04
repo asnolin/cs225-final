@@ -26,7 +26,7 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
 
 
-(* Enforces global uniqueness of variables. *)
+(* Enforces global uniqueness of variables. from ec1 *)
 let unique_vars (t : term) : term =
   let new_var (iO : int option) (x : string) : string = match iO with
       | None -> x
@@ -67,10 +67,16 @@ let unique_vars (t : term) : term =
   let (e',_) = unique_vars_r t (initial_env fvs) fvs in
   e'
 
+(*from ec1*)
+let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
+    |Var(y) -> if x = y then t2 else t10
+    |Lam(y,t1) -> Lam(y,subst_r x t2 t1)
+    |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
 
-(*when App(Lam(x.t),t)[x->v]t*)
-let rec subst(s : string) (t1 : term) (t2 : term) : term  = match t1 with
-    |_->raise TODO
+(*when App(Lam(x.t),t)[x->v]t from ec1 *)
+let rec subst(x : string) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,t1),t2)) with
+    |App(Lam(x',t1'),t2') -> subst_r x' t2' t1'
+    |_->raise IMPOSSIBLE
 
 
 (*step*)    (*from ec1, stripped down to untyped lambda calc*)
