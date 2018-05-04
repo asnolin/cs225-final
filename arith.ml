@@ -32,8 +32,7 @@ let genNum(n : int) : number =
     else if (n < 0)
     then genNeg n Zero
     else Zero
-
-
+    
 let add1 (n : number) : number = match n with
     |Pred(n') -> n'
     |_-> Succ(n)
@@ -47,7 +46,7 @@ let rec solve (n0 : number) : number = match n0 with
     |Add(n1, n2) -> begin match n1 with
         |Zero -> solve n2
         |Succ(n1') -> begin match n2 with
-            |Zero -> n1
+            |Zero -> solve n1
             |Succ(n2') -> solve(Add(add1 n1, n2'))
             |Pred(n2') -> solve(Add(n1',n2' ))
             |_-> let x = solve n2 in
@@ -65,17 +64,16 @@ let rec solve (n0 : number) : number = match n0 with
         end (*match n1 in Add*)
 
     |Sub(n1,n2) -> begin match n1 with
-        |Zero -> begin match n2 with
+        |Zero -> begin match n2 with(*if 0-n2, switch sign of n2*)
             |Zero -> Zero
-            |Succ(n2') -> raise TODO
-            |Pred(n2') -> raise TODO
-            |_-> let x = solve n2 in
-                solve(Sub(n1,x))
+            |Succ(n2') -> solve(inverse(n2))
+            |Pred(n2') -> solve(inverse(n2))
+            |_-> solve(inverse(n2))
             end(*match n2 in Sub(Zero,n2)*)
         |Succ(n1') -> begin match n2 with
             |Zero -> solve n1
             |Succ(n2') -> solve(Sub(n1',n2'))
-            |Pred(n2') -> solve(Sub(add1 n1,n2'))
+            |Pred(n2') -> solve(Add(n1,inverse(n2)))
             |_-> let x = solve n2 in
                 solve(Sub(n1,x))
             end(*match n2 in sub(Succ(n1'),n2)*)
@@ -131,8 +129,13 @@ let rec solve (n0 : number) : number = match n0 with
         end(*match n1 in Div*)
     |_-> n0(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
 
-
-
+(*creates the inverse of the number passed in, or solves number then makes inverse*)
+and inverse (n : number) : number = match n with
+    |Zero -> Zero
+    |Succ(n') -> Pred(inverse n')
+    |Pred(n') -> Succ(inverse n')
+    |_-> let x = solve n in
+        inverse x
 
   (*testing*)
 
@@ -145,16 +148,38 @@ let tests =
         let adder_ans : number = genNum(7) in
         let addNeg : number = Add(genNum(-3),genNum(4)) in
         let addNeg_ans : number  = genNum(1) in
-        
+        let addNeg2 : number = Add(genNum(5),genNum(-4)) in
+        let addNeg2_ans : number = genNum(1) in 
+        let add2Neg : number = Add(genNum(-4),genNum(-4)) in
+        let add2Neg_ans : number = genNum(-8) in
+        (*subtraction tests*)
+        let subtr : number = Sub(genNum(7),genNum(6)) in
+        let subtr_ans : number = genNum(1) in
+        let sub0 : number = Sub(genNum(0),genNum(8)) in
+        let sub0_ans : number = genNum(-8) in
+        let subNeg : number = Sub(genNum(-1), genNum(5)) in
+        let subNeg_ans : number = genNum(6) in
+        let subNeg2 : number = Sub(genNum(4), genNum(-6)) in
+        let subNeg2_ans : number = genNum(10) in
+        let sub2Neg : number = Sub(genNum(-3),genNum(-3)) in
+        let sub2Neg_ans : number = genNum(0) in
+        (*multiplication tests*)
+        (*division tests*)
+        (*compound tests*)
         (*tests something with a TODO block*)
-        let bad : number = Div(Mult(genNum(8),genNum(-2)),genNum(4)) in
-        let bad_ans : number = genNum(-4) in
+
 let arith_test : Util.test_block = 
         TestBlock
         ("Arith",
         [seven , seven_ans
         ;adder, adder_ans
         ;addNeg, addNeg_ans
-        ;bad, bad_ans
+        ;addNeg2, addNeg2_ans
+        ;add2Neg, add2Neg_ans
+        ;subtr, subtr_ans
+        ;sub0, sub0_ans
+        ;subNeg, subNeg_ans
+        ;subNeg2, subNeg2_ans
+        ;sub2Neg, sub2Neg_ans
         ],solve, (=),show_number, show_number) in
 run_tests[arith_test]
