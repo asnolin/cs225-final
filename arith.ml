@@ -93,14 +93,14 @@ let rec solve (n0 : number) : number = match n0 with
         |Succ(n1') -> begin match n2 with
             |Zero -> solve(Zero)
             |Succ(n2') -> solve(Add(Mult(n1,n2'),n1))
-            |Pred(n2') -> raise TODO
+            |Pred(n2') -> solve(inverse(Mult(n1,inverse n2)))
             |_-> let x = solve n2 in 
                 solve(Mult(n1, x))
             end(*match n2 in Mult(Succ(n1'),n2)*) 
         |Pred(n1') -> begin match n2 with
             |Zero -> Zero
-            |Succ(n2') -> raise TODO
-            |Pred(n2') -> raise TODO
+            |Succ(n2') -> solve(inverse(Mult(inverse n1,n2)))
+            |Pred(n2') -> solve(Mult(inverse n1, inverse n2))
             |_-> let x = solve n2 in
                 solve(Mult(n1,x))
             end(*match n2 in Mult(Pred(n1'),n2)*)
@@ -127,6 +127,7 @@ let rec solve (n0 : number) : number = match n0 with
         |_-> let x = solve n1 in
             solve(Div(x,n2))
         end(*match n1 in Div*)
+
     |_-> n0(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
 
 (*creates the inverse of the number passed in, or solves number then makes inverse*)
@@ -173,6 +174,8 @@ let tests =
         let mult2Neg : number = Mult(genNum(-6),genNum(-2)) in
         let mult2Neg_ans : number = genNum(12) in
         (*division tests*)
+        let div : number = Div(genNum(9), genNum(3)) in
+        let div_ans : number = genNum(3) in
         (*compound tests*)
         (*tests something with a TODO block*)
 
@@ -193,5 +196,6 @@ let arith_test : Util.test_block =
         ;multNeg, multNeg_ans
         ;multNeg2, multNeg2_ans
         ;mult2Neg, mult2Neg_ans
+        ;div, div_ans
         ],solve, (=),show_number, show_number) in
 run_tests[arith_test]
