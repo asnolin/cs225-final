@@ -89,10 +89,10 @@ let rec solve (n0 : number) : number = match n0 with
         end(*match n1 in Sub*)
 
     |Mult(n1,n2) -> begin match n1 with
-        |Zero -> Zero
+        |Zero -> solve(Zero)
         |Succ(n1') -> begin match n2 with
-            |Zero -> Zero
-            |Succ(n2') -> raise TODO
+            |Zero -> solve(Zero)
+            |Succ(n2') -> solve(Add(Mult(n1,n2'),n1))
             |Pred(n2') -> raise TODO
             |_-> let x = solve n2 in 
                 solve(Mult(n1, x))
@@ -164,6 +164,14 @@ let tests =
         let sub2Neg : number = Sub(genNum(-3),genNum(-3)) in
         let sub2Neg_ans : number = genNum(0) in
         (*multiplication tests*)
+        let mult : number = Mult(genNum(5),genNum(4)) in
+        let mult_ans : number = genNum(20) in
+        let multNeg : number = Mult(genNum(-4),genNum(2)) in
+        let multNeg_ans : number = genNum(-8) in
+        let multNeg2 : number = Mult(genNum(3), genNum(-5)) in
+        let multNeg2_ans : number = genNum(-15) in
+        let mult2Neg : number = Mult(genNum(-6),genNum(-2)) in
+        let mult2Neg_ans : number = genNum(12) in
         (*division tests*)
         (*compound tests*)
         (*tests something with a TODO block*)
@@ -181,5 +189,9 @@ let arith_test : Util.test_block =
         ;subNeg, subNeg_ans
         ;subNeg2, subNeg2_ans
         ;sub2Neg, sub2Neg_ans
+        ;mult, mult_ans
+        ;multNeg, multNeg_ans
+        ;multNeg2, multNeg2_ans
+        ;mult2Neg, mult2Neg_ans
         ],solve, (=),show_number, show_number) in
 run_tests[arith_test]
