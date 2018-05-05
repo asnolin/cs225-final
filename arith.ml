@@ -47,7 +47,7 @@ let rec solve (n0 : number) : number = match n0 with
         |Zero -> solve n2
         |Succ(n1') -> begin match n2 with
             |Zero -> solve n1
-            |Succ(n2') -> solve(Add(add1 n1, n2'))
+            |Succ(n2') -> solve(Add(Succ(n1), n2'))
             |Pred(n2') -> solve(Add(n1',n2' ))
             |_-> let x = solve n2 in
                 solve(Add(n1,x))
@@ -55,7 +55,7 @@ let rec solve (n0 : number) : number = match n0 with
         |Pred(n1') -> begin match n2 with
             |Zero -> n1
             |Succ(n2') -> solve(Add(n1',n2'))
-            |Pred(n2') -> solve(Add(sub1 n1,n2'))
+            |Pred(n2') -> solve(Add(Pred(n1),n2'))
             |_-> let x = solve n2 in 
                 solve(Add(n1,x))
             end(*match n2 in Add*)
@@ -79,8 +79,8 @@ let rec solve (n0 : number) : number = match n0 with
             end(*match n2 in sub(Succ(n1'),n2)*)
         |Pred(n1') -> begin match n2 with
             |Zero -> solve n1
-            |Succ(n2') -> raise TODO
-            |Pred(n2') -> raise TODO
+            |Succ(n2') -> solve(Sub(Pred(n1),n2'))
+            |Pred(n2') -> solve(Sub(n1',n2'))
             |_-> let x = solve n2 in 
                 solve(Sub(n1,x))
             end(*match n2 in sub(Pred(n1'),n2)*)
@@ -158,7 +158,7 @@ let tests =
         let sub0 : number = Sub(genNum(0),genNum(8)) in
         let sub0_ans : number = genNum(-8) in
         let subNeg : number = Sub(genNum(-1), genNum(5)) in
-        let subNeg_ans : number = genNum(6) in
+        let subNeg_ans : number = genNum(-6) in
         let subNeg2 : number = Sub(genNum(4), genNum(-6)) in
         let subNeg2_ans : number = genNum(10) in
         let sub2Neg : number = Sub(genNum(-3),genNum(-3)) in
