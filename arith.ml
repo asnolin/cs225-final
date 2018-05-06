@@ -1,3 +1,7 @@
+(*TODO:
+        * should solve use int division or return fraction??
+        * can use more number terms i.e Power(base, exp), Absval(number), squareroot(number) 
+        * *)
 open Util
 open StringSetMap
 
@@ -108,11 +112,17 @@ let rec solve (n0 : number) : number = match n0 with
             solve(Mult(x,n2))
         end(*match n1 in Mult*)
 
+
+    (*TODO need to test for Div(Div(a,b),c), Div(a,Div(b,c)), and Div(Div(a,b),Div(c,d)) because a/(b/c) = a*(c*b) and (a/d)/(c/d) = (a/b) * (b/a)?? *)
     |Div(n1,n2) -> begin match n1 with
-        |Zero -> Zero
+        |Zero -> solve(Zero)
         |Succ(n1') -> begin match n2 with
             |Zero -> raise DIV_BY_0
-            |Succ(n2') -> raise TODO
+            |Succ(n2') -> begin match n2' with
+                |Zero -> solve(n1) (*x/1=x*)
+                |Succ(n2'') -> raise TODO(*x/d where d >= 2 *)
+                |_ -> raise IMPOSSIBLE
+                end(*match n2' as pos denom*)
             |Pred(n2') -> raise TODO
             |_-> let x = solve n2 in
                 solve(Div(n1, x))
@@ -128,6 +138,7 @@ let rec solve (n0 : number) : number = match n0 with
             solve(Div(x,n2))
         end(*match n1 in Div*)
 
+
     |_-> n0(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
 
 (*creates the inverse of the number passed in, or solves number then makes inverse*)
@@ -138,8 +149,30 @@ and inverse (n : number) : number = match n with
     |_-> let x = solve n in
         inverse x
 
-  (*testing*)
+(*returns true if n1 < n2, otherwise false*)
+and lessThan (n1 : number) (n2 : number) : bool = match solve(Sub(n1,n2)) with
+    |Zero -> false
+    |Succ(x) -> false
+    |Pred(x) -> true
+    |_ -> raise IMPOSSIBLE
 
+(*returns true if n1 > n2, otherwise false*)    
+and graterThan (n1 : number) (n2 : number) : bool = match solve(Sub(n1,n2)) with
+    |Zero -> false
+    |Succ(x) -> true
+    |Pred(x) -> false
+    |_ -> raise IMPOSSIBLE
+
+(*returns true if n1 = n2, otherwise false*)
+and equals (n1 : number) (n2 : number) : bool = match solve(Sub(n1,n2)) with
+    |Zero -> true
+    |Succ(x) -> false
+    |Pred(x) -> false
+    |_ -> raise IMPOSSIBLE
+
+
+
+(*testing*)
 let tests = 
         (*tests a number*)
         let seven : number = genNum(7)  in
