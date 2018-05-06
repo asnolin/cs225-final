@@ -45,6 +45,8 @@ let sub1 (n : number) : number = match n with
     |Succ(n') -> n'
     |_->Pred(n)
 
+
+
 (*all need to match on n1 as well as n2*)
 let rec solve (n0 : number) : number = match n0 with
     |Add(n1, n2) -> begin match n1 with
@@ -113,7 +115,8 @@ let rec solve (n0 : number) : number = match n0 with
         end(*match n1 in Mult*)
 
 
-    (*TODO need to test for Div(Div(a,b),c), Div(a,Div(b,c)), and Div(Div(a,b),Div(c,d)) because a/(b/c) = a*(c*b) and (a/d)/(c/d) = (a/b) * (b/a)?? *)
+    (*TODO need to test for Div(Div(a,b),c), Div(a,Div(b,c)), and Div(Div(a,b),Div(c,d)) because a/(b/c) = a*(c*b) and (a/d)/(c/d) = (a/b) * (b/a)?? 
+     * possibly simplify division terms 16/4 = 8/2 = 4*)
     |Div(n1,n2) -> begin match n1 with
         |Zero -> solve(Zero)
         |Succ(n1') -> begin match n2 with
@@ -138,8 +141,8 @@ let rec solve (n0 : number) : number = match n0 with
             solve(Div(x,n2))
         end(*match n1 in Div*)
 
-
     |_-> n0(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
+
 
 (*creates the inverse of the number passed in, or solves number then makes inverse*)
 and inverse (n : number) : number = match n with
@@ -149,6 +152,7 @@ and inverse (n : number) : number = match n with
     |_-> let x = solve n in
         inverse x
 
+(*evaluation functions*)
 (*returns true if n1 < n2, otherwise false*)
 and lessThan (n1 : number) (n2 : number) : bool = match solve(Sub(n1,n2)) with
     |Zero -> false
@@ -207,8 +211,16 @@ let tests =
         let mult2Neg : number = Mult(genNum(-6),genNum(-2)) in
         let mult2Neg_ans : number = genNum(12) in
         (*division tests*)
+        let div1 : number = Div(genNum(4), genNum(1)) in
+        let div1_ans : number = genNum(4) in
         let div : number = Div(genNum(9), genNum(3)) in
         let div_ans : number = genNum(3) in
+        let divNeg : number = Div(genNum(-12),genNum(2)) in
+        let divNeg_ans : number = genNum(-6) in
+        let divNeg2 : number = Div(genNum(5), genNum(-1)) in
+        let divNeg2_ans : number = genNum(-5) in
+        let div2Neg : number = Div(genNum(-6), genNum(-3)) in
+        let div2Neg_ans : number = genNum(2) in
         (*compound tests*)
         (*tests something with a TODO block*)
 
@@ -229,6 +241,10 @@ let arith_test : Util.test_block =
         ;multNeg, multNeg_ans
         ;multNeg2, multNeg2_ans
         ;mult2Neg, mult2Neg_ans
+        ;div1, div1_ans
         ;div, div_ans
-        ],solve, (=),show_number, show_number) in
+        ;divNeg, divNeg_ans
+        ;divNeg2, divNeg2_ans
+        ;div2Neg, div2Neg_ans
+        ],solve, (=), show_number, show_number) in
 run_tests[arith_test]
