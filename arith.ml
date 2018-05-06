@@ -1,7 +1,8 @@
 (*TODO:
         * should solve use int division or return fraction??
         * can use more number terms i.e Power(base, exp), Absval(number), squareroot(number) 
-        * *)
+        * finish modulo, which moght be helpful for div
+        * modulo tests*)
 open Util
 open StringSetMap
 
@@ -18,6 +19,7 @@ type number =
     |Sub of number * number
     |Mult of number * number
     |Div of number * number
+    |Mod of number * number
     [@@deriving show]
 
 (*don't call genPos or genNeg to generate a positive number,
@@ -114,7 +116,6 @@ let rec solve (n0 : number) : number = match n0 with
             solve(Mult(x,n2))
         end(*match n1 in Mult*)
 
-
     (*TODO need to test for Div(Div(a,b),c), Div(a,Div(b,c)), and Div(Div(a,b),Div(c,d)) because a/(b/c) = a*(c*b) and (a/d)/(c/d) = (a/b) * (b/a)?? 
      * possibly simplify division terms 16/4 = 8/2 = 4*)
     |Div(n1,n2) -> begin match n1 with
@@ -124,7 +125,7 @@ let rec solve (n0 : number) : number = match n0 with
             |Succ(n2') -> begin match n2' with
                 |Zero -> solve(n1) (*x/1=x*)
                 |Succ(n2'') -> raise TODO(*x/d where d >= 2 *)
-                |_ -> raise IMPOSSIBLE
+                |_ -> raise TODO
                 end(*match n2' as pos denom*)
             |Pred(n2') -> raise TODO
             |_-> let x = solve n2 in
@@ -140,6 +141,31 @@ let rec solve (n0 : number) : number = match n0 with
         |_-> let x = solve n1 in
             solve(Div(x,n2))
         end(*match n1 in Div*)
+
+    |Mod(n1,n2) -> begin match n1 with
+        |Zero -> Zero
+        |Succ(n1') -> begin match n2 with
+            |Zero -> raise DIV_BY_0
+            |Succ(n2') ->
+                if(equals n1 n2)
+                then Zero
+                else if(n1 < n2)
+                then n1
+                else solve(Mod(Sub(n1,n2),n2))
+            |Pred(n2') -> raise TODO
+            |_ -> let x = solve n2 in
+                solve(Mod(n1, x))
+            end(*match n2 in Mod(Succ(n1'), n2)*)
+        |Pred(n1') -> begin match n2 with
+            |Zero -> raise DIV_BY_0
+            |Succ(n2') -> raise TODO
+            |Pred(n2') -> raise TODO
+            |_ -> let x = solve n2 in 
+                solve(Mod(n1, x))
+            end(*match n2 in Mod(Pred(n1'),n2)*)
+        |_ -> let x = solve n1 in 
+            solve(Mod(x, n2))
+        end(*match n1 in Mod*)
 
     |_-> n0(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
 
@@ -221,6 +247,9 @@ let tests =
         let divNeg2_ans : number = genNum(-5) in
         let div2Neg : number = Div(genNum(-6), genNum(-3)) in
         let div2Neg_ans : number = genNum(2) in
+        (*Modulo tests*)
+        let moder : number = Mod(genNum(10), genNum(4)) in
+        let moder_ans : number = genNum(2) in
         (*compound tests*)
         (*tests something with a TODO block*)
 
@@ -246,5 +275,6 @@ let arith_test : Util.test_block =
         ;divNeg, divNeg_ans
         ;divNeg2, divNeg2_ans
         ;div2Neg, div2Neg_ans
+        ;moder, moder_ans
         ],solve, (=), show_number, show_number) in
 run_tests[arith_test]
