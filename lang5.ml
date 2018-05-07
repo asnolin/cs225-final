@@ -2,7 +2,11 @@ open Util
 open StringSetMap
 
 type ty =
+        |Unit
         |Fun of ty * ty
+        [@@deriving show]
+
+exception TYPE_ERROR
 
 type term =
         |Var of string
@@ -19,9 +23,7 @@ type result =
         |Val of value
         [@@deriving show]
 
-
-(* Cons cell stuff I think
-type tenv = *)
+type tenv = ty string_map
 
 let rec term_of_val (v : value) : term = match v with
         |VLam(x,ty,t) -> Lam(x,ty,t)
@@ -114,11 +116,22 @@ let rec step (t0 : term) : result = match t0 with
     end
   |Var(x) -> Stuck
 
+let rec infer (g : tenv) (t : term) : ty = match t with
+        |Var(x) -> StringMap.find x g
+        |Lam(x,ty,t1) -> let ty2 = infer (StringMap.add x ty g) t1 in
+                Fun(ty,ty2)
+        |App(t1,t2) -> let ty = infer g t1 in
+                begin match ty with
+                |Fun(ty1,ty2) ->
+                        if ty1 = infer g t2 then ty2
+                        else raise TYPE_ERROR
+                |_ -> raise TYPE_ERROR
+                end
+
 (*testing *)
 let tests = 
-    (* Need to add type to Lam constructors in tests
-    let lambda : term = Lam("x",Var("x")) in 
-    let lambda_ans : result = Val(VLam("x", Var("x"))) in *)
+    let lambda : term = Lam("x",Unit,Var("x")) in 
+    let lambda_ans : result = Val(VLam("x",Unit,Var("x"))) in
     (*TODO more tests*)
 
 let lang_test : Util.test_block = 
