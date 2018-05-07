@@ -16,6 +16,7 @@ type term =
         |Var of string
         |Lam of string * ty * term
         |App of term * term
+        |Error of ty
         [@@deriving show]
         
 type value =
@@ -26,6 +27,7 @@ type result =
         |Stuck
         |Step of term
         |Val of value
+        |RError of ty
         [@@deriving show]
 
 type tenv = ty string_map
@@ -41,6 +43,7 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   | Var(x) -> StringSet.of_list [x]
   | Lam(x,ty,t) -> StringSet.remove x (free_vars t)
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
+  | Error(ty) -> StringSet.empty
 
 
 (* Enforces global uniqueness of variables. from ec1 *)
@@ -66,6 +69,7 @@ let unique_vars (t : term) : term =
   let rename_var = rename_var_r None in
   let rec unique_vars_r (t0 : term) (env : string string_map) (g : string_set) : term * string_set = 
           match t0 with
+      | Error(ty) -> (Error(ty),g)
       | True -> (True,g)
       | False -> (False,g)
       | If(t1,t2,t3) -> 
@@ -99,6 +103,7 @@ let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
     |Var(y) -> if x = y then t2 else t10
     |Lam(y,ty,t1) -> Lam(y,ty,subst_r x t2 t1)
     |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
+    |Error(ty) -> t10
 
 (*when App(Lam(x.t),t)[x->v]t from ec1 *)
 let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
@@ -131,6 +136,7 @@ let rec step (t0 : term) : result = match t0 with
        *)
       | Step(t2') -> Step(App(t1,t2'))
       | Stuck -> Stuck
+      | RError(ty) -> RError(ty)
       end
     (*    e₁ —→ e₁′
      * ———————————————
@@ -138,8 +144,10 @@ let rec step (t0 : term) : result = match t0 with
      *)
     | Step(t1') -> Step(App(t1',t2))
     | Stuck -> Stuck
+    | RError(ty) -> RError(ty)
     end
   |Var(x) -> Stuck
+  |Error(ty) -> RError(ty)
 
 let rec infer (g : tenv) (t : term) : ty = match t with
         |True -> Bool
@@ -161,6 +169,7 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                         else raise TYPE_ERROR
                 |_ -> raise TYPE_ERROR
                 end
+        |Error(ty) -> ty
 
 (*testing *)
 let tests = 
