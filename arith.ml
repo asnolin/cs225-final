@@ -204,7 +204,7 @@ let rec solve (n0 : number) : res = match n0 with
             |Succ(n2') ->
                 if(equals n1 n2)
                 then solve(Zero)(*x mod x = 0*)
-                else if(n1 < n2)
+                else if(lessThan n1 n2)
                 then solve(n1)(*x mod y = x if x < y*)
                 else solve(Mod(Sub(n1,n2),n2))(*x mod y = (x-y) mod y if x > y*)
             |Pred(n2') -> solve(Mod(n1 ,inverse  n2))
@@ -235,14 +235,27 @@ let rec solve (n0 : number) : res = match n0 with
     |Sqrt(n) -> begin match n with
         |Nan -> solve Nan
         |Zero -> solve(Zero)
-        |Succ(n') -> raise TODO
+        |Succ(n') -> 
+            let x : number = Succ(Zero) in
+            let rec sq (x : number) : number = 
+                let x2 = res_to_num(solve(Mult(x,x))) in
+                let x2p1 = res_to_num(solve(Mult(Succ(x),Succ(x)))) in
+                if(equals n x2)
+                then x 
+                else if(graterThan n x2 && lessThan n x2p1)
+                then x
+                else sq(Succ(x))
+   in
+            solve(sq x)
+           
         |Pred(n') -> IMAGINARY
         |_ -> let x = solve n in
                 begin match x with
                     |Res(x') -> solve(Sqrt(x'))
                     |_ -> x
                     end
-        end 
+        end(*match n in Sqrt*)
+
     |_-> Res(n0)(*otherwise it is Zero|Succ(n0')|Pred(n0')*)
 
 
