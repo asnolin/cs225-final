@@ -1,13 +1,16 @@
 open Util
 open StringSetMap
 
+type ty =
+        |Fun of ty * ty
+
 type term =
         |Var of string
-        |Lam of string * term
+        |Lam of string * ty * term
         |App of term * term
         [@@deriving show]
 type value =
-        |VLam of string * term
+        |VLam of string * ty * term
         [@@deriving show]
 
 type result = 
@@ -16,13 +19,17 @@ type result =
         |Val of value
         [@@deriving show]
 
+
+(* Cons cell stuff I think
+type tenv = *)
+
 let rec term_of_val (v : value) : term = match v with
-        |VLam(x,t) -> Lam(x,t)
+        |VLam(x,ty,t) -> Lam(x,ty,t)
 
 (*free vars*)
 let rec free_vars (t0 : term) : string_set = match t0 with
   | Var(x) -> StringSet.of_list [x]
-  | Lam(x,t) -> StringSet.remove x (free_vars t)
+  | Lam(x,ty,t) -> StringSet.remove x (free_vars t)
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
 
 
@@ -50,10 +57,10 @@ let unique_vars (t : term) : term =
   let rec unique_vars_r (t0 : term) (env : string string_map) (g : string_set) : term * string_set = 
           match t0 with
       | Var(x) -> (Var(StringMap.find x env),g)
-      | Lam(x,t) ->
+      | Lam(x,ty,t) ->
           let (x',g') = rename_var x g in
           let (e',g'') = unique_vars_r t (StringMap.add x x' env) g' in
-          (Lam(x',t),g'')
+          (Lam(x',ty,t),g'')
       | App(e1,e2) ->
           let (e1',g') = unique_vars_r e1 env g in
           let (e2',g'') = unique_vars_r e2 env g' in
@@ -70,26 +77,26 @@ let unique_vars (t : term) : term =
 (*from ec1*)
 let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
     |Var(y) -> if x = y then t2 else t10
-    |Lam(y,t1) -> Lam(y,subst_r x t2 t1)
+    |Lam(y,ty,t1) -> Lam(y,ty,subst_r x t2 t1)
     |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
 
 (*when App(Lam(x.t),t)[x->v]t from ec1 *)
-let rec subst(x : string) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,t1),t2)) with
-    |App(Lam(x',t1'),t2') -> subst_r x' t2' t1'
+let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
+    |App(Lam(x',ty,t1'),t2') -> subst_r x' t2' t1'
     |_->raise IMPOSSIBLE
 
 
 (*step*)    (*from ec1, stripped down to untyped lambda calc*)
 let rec step (t0 : term) : result = match t0 with
   (* λx:τ.e  ∈  val *)
-  | Lam(x,t) -> Val(VLam(x,t))
+  | Lam(x,ty,t) -> Val(VLam(x,ty,t))
   | App(t1,t2) -> begin match step t1 with
     | Val(v1) -> begin match step t2 with
       | Val(v2) -> begin match v1 with
         (* —————————————————————(β)
          * (λx:τ.e)v —→ [x ↦ v]e
          *)
-        | VLam(x,t) -> Step(subst x (term_of_val v2) t)
+        | VLam(x,ty,t) -> Step(subst x ty (term_of_val v2) t)
         end
       (*   e₂ —→ e₂′
        * —————————————
@@ -107,11 +114,11 @@ let rec step (t0 : term) : result = match t0 with
     end
   |Var(x) -> Stuck
 
-
 (*testing *)
 let tests = 
+    (* Need to add type to Lam constructors in tests
     let lambda : term = Lam("x",Var("x")) in 
-    let lambda_ans : result = Val(VLam("x", Var("x"))) in
+    let lambda_ans : result = Val(VLam("x", Var("x"))) in *)
     (*TODO more tests*)
 
 let lang_test : Util.test_block = 
