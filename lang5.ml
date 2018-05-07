@@ -144,7 +144,13 @@ let rec step (t0 : term) : result = match t0 with
 let rec infer (g : tenv) (t : term) : ty = match t with
         |True -> Bool
         |False -> Bool
-        |If(t1,t2,t3) -> raise TODO
+        |If(t1,t2,t3) -> 
+                let ty1 = infer g t1 in
+                let ty2 = infer g t2 in
+                let ty3 = infer g t3 in
+                if not (ty1 = Bool) then raise TYPE_ERROR else
+                if not (ty2 = ty3) then raise TYPE_ERROR else
+                ty2
         |Var(x) -> StringMap.find x g
         |Lam(x,ty,t1) -> let ty2 = infer (StringMap.add x ty g) t1 in
                 Fun(ty,ty2)
