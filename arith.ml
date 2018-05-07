@@ -108,27 +108,29 @@ let rec solve (n0 : number) : number = match n0 with
             solve(Mult(x,n2))
         end(*match n1 in Mult*)
 
-    (*TODO need to test for Div(Div(a,b),c), Div(a,Div(b,c)), and Div(Div(a,b),Div(c,d)) because a/(b/c) = a*(c*b) and (a/d)/(c/d) = (a/b) * (b/a)?? 
-     * possibly simplify division terms 16/4 = 8/2 = 4
-     * maybe use gauss' algorithm for reduction
-     * *)
+    (*Div returns the floor of integer division*)
     |Div(n1,n2) -> begin match n1 with
         |Zero -> solve(Zero)
         |Succ(n1') -> begin match n2 with
             |Zero -> raise DIV_BY_0
             |Succ(n2') -> begin match n2' with
                 |Zero -> solve(n1) (*x/1=x*)
-                |Succ(n2'') -> raise TODO(*x/d where d >= 2 *)
+                |Succ(n2'') -> (*where x/d where d >=2*)
+                    if(equals n1 n2)
+                    then solve(Succ(Zero)) (* x/x = 1 *)
+                    else if(graterThan n1 n2)
+                    then solve(Add(Div(Sub(n1, n2), n2),Succ(Zero)))(*x/y*) (*raise TODOx/d where d >= 2 *)
+                    else solve(Zero)(*n1 < n2*) 
                 |_ -> raise IMPOSSIBLE
-                end(*match n2' as pos denom*)
-            |Pred(n2') -> raise TODO
+                end(*match n2' in Div(Succ(n1'), Succ(n2') *)
+            |Pred(n2') -> solve(inverse(Div(n1,inverse n2)))
             |_-> let x = solve n2 in
                 solve(Div(n1, x))
             end(*match n2 Div(Succ(n1'),n2)*)
         |Pred(n1') -> begin match n2 with
             |Zero -> raise DIV_BY_0
-            |Succ(n2') -> raise TODO
-            |Pred(n2') -> raise TODO
+            |Succ(n2') -> solve(inverse(Div(inverse n1,n2)))
+            |Pred(n2') -> solve(Div(inverse n1, inverse n2))
             |_-> let x = solve n2 in
                 solve(Div(n1, x))
             end(*match n2 in Div(Pred(n1'),n2)*)
@@ -136,6 +138,7 @@ let rec solve (n0 : number) : number = match n0 with
             solve(Div(x,n2))
         end(*match n1 in Div*)
 
+    (*always returns a positive integer*)
     |Mod(n1,n2) -> begin match n1 with
         |Zero -> Zero(*0 mod x = 0*)
         |Succ(n1') -> begin match n2 with
@@ -153,7 +156,7 @@ let rec solve (n0 : number) : number = match n0 with
         |Pred(n1') -> begin match n2 with
             |Zero -> raise DIV_BY_0
             |Succ(n2') -> solve(Mod(inverse n1, n2))
-            |Pred(n2') -> raise TODO
+            |Pred(n2') -> solve(Mod(inverse n1, n2))
             |_ -> let x = solve n2 in 
                 solve(Mod(n1, x))
             end(*match n2 in Mod(Pred(n1'),n2)*)
