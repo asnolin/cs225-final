@@ -179,9 +179,8 @@ let tests =
 
 let lang_test : Util.test_block = 
     TestBlock
-    ("Lang5"
-   ,[
-lambda, lambda_ans
-
+    ("Lang5",
+    [lambda, lambda_ans
+    ;
     ],step, (=),show_term ,show_result)in
 run_tests[lang_test]

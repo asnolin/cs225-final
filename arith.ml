@@ -350,6 +350,8 @@ let tests =
         let divNeg2_ans : res = Res(genNum(-5)) in
         let div2Neg : number = Div(genNum(-6), genNum(-3)) in
         let div2Neg_ans : res = Res(genNum(2)) in
+        let divZero : number = Div(genNum(5),genNum(0)) in
+        let divZero_ans : res = DIV_BY_0 in
         (*Modulo tests*)
         let moder : number = Mod(genNum(10), genNum(4)) in
         let moder_ans : res = Res(genNum(2)) in
@@ -364,11 +366,12 @@ let tests =
         (*integer square root tests*)
         let sq : number = Sqrt(genNum(81)) in
         let sq_ans : res = Res(genNum(9)) in
+        let almostSq : number = Sqrt(genNum(10)) in
+        let almostSq_ans : res = Res(genNum(3)) in
         let negSqrt : number = Sqrt(genNum(-11)) in
         let negSqrt_ans : res = IMAGINARY in
-        (*compound tests*)
-        (*tests something with a TODO block*)
 
+        
 let arith_test : Util.test_block = 
         TestBlock
         ("Arith",
@@ -391,13 +394,15 @@ let arith_test : Util.test_block =
         ;divNeg, divNeg_ans
         ;divNeg2, divNeg2_ans
         ;div2Neg, div2Neg_ans
+        ;divZero, divZero_ans
         ;moder, moder_ans
         ;negMod, negMod_ans
         ;modNeg2, modNeg2_ans
         ;mod2Neg, mod2Neg_ans
         ;modNeg4, modNeg4_ans
         ;sq, sq_ans
+        ;almostSq, almostSq_ans
         ;negSqrt, negSqrt_ans
-
+        
         ],solve, (=), show_number, show_res) in
 run_tests[arith_test]
