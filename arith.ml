@@ -253,6 +253,8 @@ let tests =
         let negMod2_ans : number = genNum(0) in
         let mod2Neg : number = Mod(genNum(-4), genNum(-1)) in
         let mod2Neg_ans : number = genNum(0) in
+        let negMod3 : number = Mod(genNum(11), genNum(-4)) in
+        let negMod3_ans : number = genNum(
         (*compound tests*)
         (*tests something with a TODO block*)
 
@@ -282,5 +284,6 @@ let arith_test : Util.test_block =
         ;negMod, negMod_ans
         ;negMod2, negMod2_ans
         ;mod2Neg, mod2Neg_ans
+
         ],solve, (=), show_number, show_number) in
 run_tests[arith_test]
