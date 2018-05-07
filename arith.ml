@@ -3,6 +3,7 @@
         * can use more number terms i.e Power(base, exp), Absval(number), squareroot(number) 
         * finish modulo, which moght be helpful for div
         * modulo tests*)
+
 open Util
 open StringSetMap
 
@@ -39,15 +40,6 @@ let genNum(n : int) : number =
     then genNeg n Zero
     else Zero
     
-let add1 (n : number) : number = match n with
-    |Pred(n') -> n'
-    |_-> Succ(n)
-
-let sub1 (n : number) : number = match n with
-    |Succ(n') -> n'
-    |_->Pred(n)
-
-
 
 (*all need to match on n1 as well as n2*)
 let rec solve (n0 : number) : number = match n0 with
@@ -117,7 +109,9 @@ let rec solve (n0 : number) : number = match n0 with
         end(*match n1 in Mult*)
 
     (*TODO need to test for Div(Div(a,b),c), Div(a,Div(b,c)), and Div(Div(a,b),Div(c,d)) because a/(b/c) = a*(c*b) and (a/d)/(c/d) = (a/b) * (b/a)?? 
-     * possibly simplify division terms 16/4 = 8/2 = 4*)
+     * possibly simplify division terms 16/4 = 8/2 = 4
+     * maybe use gauss' algorithm for reduction
+     * *)
     |Div(n1,n2) -> begin match n1 with
         |Zero -> solve(Zero)
         |Succ(n1') -> begin match n2 with
@@ -125,7 +119,7 @@ let rec solve (n0 : number) : number = match n0 with
             |Succ(n2') -> begin match n2' with
                 |Zero -> solve(n1) (*x/1=x*)
                 |Succ(n2'') -> raise TODO(*x/d where d >= 2 *)
-                |_ -> raise TODO
+                |_ -> raise IMPOSSIBLE
                 end(*match n2' as pos denom*)
             |Pred(n2') -> raise TODO
             |_-> let x = solve n2 in
@@ -143,22 +137,22 @@ let rec solve (n0 : number) : number = match n0 with
         end(*match n1 in Div*)
 
     |Mod(n1,n2) -> begin match n1 with
-        |Zero -> Zero
+        |Zero -> Zero(*0 mod x = 0*)
         |Succ(n1') -> begin match n2 with
-            |Zero -> raise DIV_BY_0
+            |Zero -> raise DIV_BY_0(*x mod 0 is undefined*)
             |Succ(n2') ->
                 if(equals n1 n2)
-                then Zero
+                then Zero(*x mod x = 0*)
                 else if(n1 < n2)
-                then n1
-                else solve(Mod(Sub(n1,n2),n2))
-            |Pred(n2') -> raise TODO
+                then n1(*x mod y = x if x < y*)
+                else solve(Mod(Sub(n1,n2),n2))(*x mod y = (x-y) mod y if x > y*)
+            |Pred(n2') -> solve(Mod(n1 ,inverse  n2))
             |_ -> let x = solve n2 in
                 solve(Mod(n1, x))
             end(*match n2 in Mod(Succ(n1'), n2)*)
         |Pred(n1') -> begin match n2 with
             |Zero -> raise DIV_BY_0
-            |Succ(n2') -> raise TODO
+            |Succ(n2') -> solve(Mod(inverse n1, n2))
             |Pred(n2') -> raise TODO
             |_ -> let x = solve n2 in 
                 solve(Mod(n1, x))
@@ -250,6 +244,12 @@ let tests =
         (*Modulo tests*)
         let moder : number = Mod(genNum(10), genNum(4)) in
         let moder_ans : number = genNum(2) in
+        let negMod : number = Mod(genNum(-6),genNum(3)) in
+        let negMod_ans : number = genNum(0) in
+        let negMod2 : number = Mod(genNum(4), genNum(-2)) in
+        let negMod2_ans : number = genNum(0) in
+        let mod2Neg : number = Mod(genNum(-4), genNum(-1)) in
+        let mod2Neg_ans : number = genNum(0) in
         (*compound tests*)
         (*tests something with a TODO block*)
 
@@ -276,5 +276,8 @@ let arith_test : Util.test_block =
         ;divNeg2, divNeg2_ans
         ;div2Neg, div2Neg_ans
         ;moder, moder_ans
+        ;negMod, negMod_ans
+        ;negMod2, negMod2_ans
+        ;mod2Neg, mod2Neg_ans
         ],solve, (=), show_number, show_number) in
 run_tests[arith_test]
