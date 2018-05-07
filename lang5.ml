@@ -2,6 +2,7 @@ open Util
 open StringSetMap
 
 type ty =
+        |Bool
         |Unit
         |Fun of ty * ty
         [@@deriving show]
@@ -9,10 +10,14 @@ type ty =
 exception TYPE_ERROR
 
 type term =
+        |True
+        |False
+        |If of term * term * term
         |Var of string
         |Lam of string * ty * term
         |App of term * term
         [@@deriving show]
+        
 type value =
         |VLam of string * ty * term
         [@@deriving show]
@@ -30,6 +35,9 @@ let rec term_of_val (v : value) : term = match v with
 
 (*free vars*)
 let rec free_vars (t0 : term) : string_set = match t0 with
+  | True -> StringSet.empty
+  | False -> StringSet.empty
+  | If(t1,t2,t3) -> StringSet.union (StringSet.union (free_vars t1) (free_vars t2)) (free_vars t3)
   | Var(x) -> StringSet.of_list [x]
   | Lam(x,ty,t) -> StringSet.remove x (free_vars t)
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
@@ -58,6 +66,13 @@ let unique_vars (t : term) : term =
   let rename_var = rename_var_r None in
   let rec unique_vars_r (t0 : term) (env : string string_map) (g : string_set) : term * string_set = 
           match t0 with
+      | True -> (True,g)
+      | False -> (False,g)
+      | If(t1,t2,t3) -> 
+                let (t1',g'1) = unique_vars_r t1 env g in
+                let (t2',g'2) = unique_vars_r t2 env g'1 in
+                let (t3',g'3) = unique_vars_r t3 env g'2 in
+                (If(t1',t2',t3'),g'3)
       | Var(x) -> (Var(StringMap.find x env),g)
       | Lam(x,ty,t) ->
           let (x',g') = rename_var x g in
@@ -78,6 +93,9 @@ let unique_vars (t : term) : term =
 
 (*from ec1*)
 let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
+    |True -> t10
+    |False -> t10
+    |If(t11,t12,t13) -> If(subst_r x t2 t11,subst_r x t2 t12,subst_r x t2 t13)
     |Var(y) -> if x = y then t2 else t10
     |Lam(y,ty,t1) -> Lam(y,ty,subst_r x t2 t1)
     |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
@@ -91,6 +109,13 @@ let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match uni
 (*step*)    (*from ec1, stripped down to untyped lambda calc*)
 let rec step (t0 : term) : result = match t0 with
   (* λx:τ.e  ∈  val *)
+  | True -> Stuck
+  | False -> Stuck
+  | If(t1,t2,t3) -> begin match t1 with
+        |True -> Step(t2)
+        |False -> Step(t3)
+        |_ -> raise TYPE_ERROR
+        end
   | Lam(x,ty,t) -> Val(VLam(x,ty,t))
   | App(t1,t2) -> begin match step t1 with
     | Val(v1) -> begin match step t2 with
@@ -117,6 +142,9 @@ let rec step (t0 : term) : result = match t0 with
   |Var(x) -> Stuck
 
 let rec infer (g : tenv) (t : term) : ty = match t with
+        |True -> Bool
+        |False -> Bool
+        |If(t1,t2,t3) -> raise TODO
         |Var(x) -> StringMap.find x g
         |Lam(x,ty,t1) -> let ty2 = infer (StringMap.add x ty g) t1 in
                 Fun(ty,ty2)
