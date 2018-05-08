@@ -1,6 +1,6 @@
 open Util
 open StringSetMap
-
+open Arith
 
 type ty =
         |Bool
@@ -196,40 +196,26 @@ let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
 let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
     |App(Lam(x',ty,t1'),t2') -> subst_r x' t2' t1'
     |_->raise IMPOSSIBLE
-
-
-(*step*)    (*from ec1, stripped down to untyped lambda calc*)
+        
+let rec num_of_term (t : term) : number = match t with
+        |Nan -> Nan
+        |Zero -> Zero
+        |Succ(t') -> Succ(num_of_term t')
+        |Pred(t') -> Pred(num_of_term t')
+        |Add(t1,t2) ->Add(num_of_term t1,num_of_term t2)
+        |Sub(t1,t2) ->Sub(num_of_term t1, num_of_term t2)
+        |Mult(t1,t2) ->Mult(num_of_term t1,num_of_term t2)
+        |Div(t1,t2) ->Div(num_of_term t1, num_of_term t2)
+        |Mod(t1,t2) ->Mod(num_of_term t1, num_of_term t2)
+        |Sqrt(t') -> Sqrt(num_of_term t')
+        |_ -> Nan
+(*step*)    (*from ec1 with our modifications*)
 let rec step (t0 : term) : result = match t0 with
   |Nan -> RError(Number)
   |Zero -> Val(Res(Zero))
   |Succ(n) -> Val(Res(t0))
   |Pred(n) -> Val(Res(t0))
-  |Add(n1,n2) -> begin match n1 with
-        |Nan -> RError(Number)
-        |Zero -> Step(n2)
-        |Succ(n1') -> begin match n2 with
-                |Nan -> RError(Number)
-                |Zero -> Step(n1)
-                |Succ(n2') -> Step(Add(Succ(n1),n2'))
-                |Pred(n2') -> Step(Add(n1',n2'))
-                |_ -> let x = step n2 in
-                        begin match x with
-                        |Val(v)-> raise TODO
-                        |Stuck -> Stuck
-                        |Step(t) -> raise TODO
-                        |RError(ty) -> raise TODO
-                        |RRaise(t) -> raise TODO
-                        end
-                end 
-        |Pred(n1') -> raise TODO
-        |Add(n1',n2') -> raise TODO
-        |Sub(n1',n2') -> raise TODO
-        |Mult(n1',n2') -> raise TODO
-        |Div(n1',n2') -> raise TODO
-        |Mod(n1',n2') -> raise TODO
-        |Sqrt (n') -> raise TODO
-        |_ -> raise TODO
-        end
+  |Add(n1,n2) -> raise TODO
   |Sub(n1,n2) -> raise TODO
   |Mult(n1,n2) -> raise TODO
   |Div(n1,n2) -> raise TODO
