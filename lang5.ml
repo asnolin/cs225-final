@@ -5,6 +5,7 @@ type ty =
         |Bool
         |Unit
         |Fun of ty * ty
+        |Exception of ty
         [@@deriving show]
 
 exception TYPE_ERROR
@@ -222,9 +223,20 @@ let rec infer (g : tenv) (t : term) : ty = match t with
         |TryWith(t1,t2) -> 
                 let ty1 = infer g t1 in
                 let ty2 = infer g t2 in
-                if not (ty1 = ty2) then raise TYPE_ERROR
-                else ty1
-        |Raise(t1) -> raise TODO
+                begin match ty2 with
+                        |Fun(ty21, ty22) -> 
+                                        if not (ty1 = ty22) then raise TYPE_ERROR
+                                        else begin match ty21 with
+                                                |Exception(ty21') -> ty1
+                                                |_ -> raise TYPE_ERROR
+                                        end
+                        |_ -> raise TYPE_ERROR
+                end
+        |Raise(t1) -> let ty = infer g t1 in
+                begin match ty with
+                        |Exception(ty') -> ty'
+                        |_ -> raise TYPE_ERROR
+                end
 
 (*testing *)
 let tests = 
