@@ -7,6 +7,7 @@ type ty =
         |Unit
         |Fun of ty * ty
         |Number
+        |Exception of ty
         [@@deriving show]
 
 exception TYPE_ERROR
@@ -32,7 +33,10 @@ type term =
         |Mult of term * term
         |Div of term * term
         |Mod of term * term
-        |Sqrt of term        
+        |Sqrt of term      
+
+        |Raise of term
+
         [@@deriving show]
         
 type value =
@@ -49,6 +53,7 @@ type result =
         |Step of term
         |Val of value
         |RError of ty
+        |RRaise of term
         [@@deriving show]
 
 type tenv = ty string_map
@@ -69,7 +74,6 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   | Lam(x,ty,t) -> StringSet.remove x (free_vars t)
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
   | Error(ty) -> StringSet.empty
-  (* Need to check free_vars of TryWith!!! *)
   | TryWith(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
   |Nan -> StringSet.empty
   |Zero -> StringSet.empty
@@ -81,6 +85,9 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   |Div(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
   |Mod(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
   |Sqrt(n) -> free_vars n
+  | Raise(t1) -> free_vars t1
+
+
 
 (* Enforces global uniqueness of variables. from ec1 *)
 let unique_vars (t : term) : term =
@@ -135,6 +142,8 @@ let unique_vars (t : term) : term =
           let (t1',g') = unique_vars_r t1 env g in
           let (t2',g'') = unique_vars_r t2 env g' in
           (TryWith(t1',t2'),g'')
+      | Raise(t1) -> let (t1',g') = unique_vars_r t1 env g in
+              (Raise(t1'),g)
       | True -> (True,g)
       | False -> (False,g)
       | If(t1,t2,t3) -> 
@@ -180,6 +189,9 @@ let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
     |Div(n1,n2) -> Div(subst_r x t2 n1, subst_r x t2 n2)
     |Mod(n1,n2) -> Mod(subst_r x t2 n1, subst_r x t2 n2)
     |Sqrt(n) -> Sqrt(subst_r x t2 n)
+    |Raise(t11) -> Raise(subst_r x t2 t11)
+
+
 (*when App(Lam(x.t),t)[x->v]t from ec1 *)
 let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
     |App(Lam(x',ty,t1'),t2') -> subst_r x' t2' t1'
@@ -206,6 +218,7 @@ let rec step (t0 : term) : result = match t0 with
                         |Stuck -> Stuck
                         |Step(t) -> raise TODO
                         |RError(ty) -> raise TODO
+                        |RRaise(t) -> raise TODO
                         end
                 end 
         |Pred(n1') -> raise TODO
@@ -223,14 +236,18 @@ let rec step (t0 : term) : result = match t0 with
   |Mod(n1,n2) -> raise TODO
   |Sqrt(n) -> raise TODO
   (* λx:τ.e  ∈  val *)
+  (* Our Definitions *)
   | True -> Val(VTrue)
   | False -> Val(VFalse)
+  (* E-IfTrue, E-IfFalse p34 *)
   | If(t1,t2,t3) -> begin match t1 with
         |True -> Step(t2)
         |False -> Step(t3)
         |_ -> raise TYPE_ERROR
         end
+  (* Our Definition *)
   | Lam(x,ty,t) -> Val(VLam(x,ty,t))
+  (* App Evaluations p103,172,175 *)
   | App(t1,t2) -> begin match step t1 with
     | Val(v1) -> begin match step t2 with
       | Val(v2) -> begin match v1 with
@@ -253,26 +270,61 @@ let rec step (t0 : term) : result = match t0 with
         |VLam(x,ty,t) -> Step(subst x ty t2 t)
         |_ -> Stuck
         end
+      (* E-AppErr2 p172*)
       | RError(ty) -> RError(ty)
+      (* E-AppRaise2 p175 *)
+      | RRaise(t) -> begin match step t with
+                |Val(v1) -> Step(t2)
+                |_ -> Stuck
+      end
       end
     (*    e₁ —→ e₁′
      * ———————————————
      * e₁ e₂ —→ e₁′ e₂
      *)
     | Step(t1') -> Step(App(t1',t2))
+    (* Our Definition *)
     | Stuck -> Stuck
+    (* E-AppErr1 p172 *)
     | RError(ty) -> RError(ty)
+    (* E-AppRaise1 p175 *)
+    | RRaise(t) -> begin match step t with
+                |Val(v1) -> step t1
+                |_ -> Stuck
     end
+    end
+  (* Our Definition *)
   |Var(x) -> Stuck
   |Error(ty) -> RError(ty)
+  (* Try Evaluation p172,174,175 *)
   |TryWith(t1,t2) -> 
         begin match step t1 with
+        (* E-TryV p174 *)
         |Val(v1) -> Step(t1)
+        (* E-Try p174 *)
         |Step(t1') -> Step(TryWith(t1',t2))
+        (* E-TryError p174 *)
         |RError(ty) -> Step(t2)
+        (* E-TryRaise p175 *)
+        |RRaise(t1') -> begin match step t1' with
+                |Val(v1) -> Step(App(t2, t1'))
+                |_ -> Stuck
+        end
         |_ -> Stuck
         end
+  (* Raise Evaluation p175 *)
+  |Raise(t) -> begin match step t with
+        (* E-Raise p175 *)
+        |Step(t') -> Step(Raise(t'))
+        (* E-RaiseRaise p175 *)
+        |RRaise(t') -> begin match step t' with
+                |Val(v1) -> RRaise(t')
+                |_ -> Stuck
+        end
+        |_ -> Stuck
+  end
 
+(* Pieces taken from Darais' hw5.ml *)
 let rec infer (g : tenv) (t : term) : ty = match t with
         |Nan -> raise TODO
         |Zero -> raise TODO
@@ -293,9 +345,12 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                 if not (ty1 = Bool) then raise TYPE_ERROR else
                 if not (ty2 = ty3) then raise TYPE_ERROR else
                 ty2
+        (* T-Var *)
         |Var(x) -> StringMap.find x g
+        (* T-Abs p103 *)
         |Lam(x,ty,t1) -> let ty2 = infer (StringMap.add x ty g) t1 in
                 Fun(ty,ty2)
+        (* T-App p103 *)
         |App(t1,t2) -> let ty = infer g t1 in
                 begin match ty with
                 |Fun(ty1,ty2) ->
@@ -303,12 +358,27 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                         else raise TYPE_ERROR
                 |_ -> raise TYPE_ERROR
                 end
+        (* T-Error p172 *)
         |Error(ty) -> ty
+        (* T-Try p175 *)
         |TryWith(t1,t2) -> 
                 let ty1 = infer g t1 in
                 let ty2 = infer g t2 in
-                if not (ty1 = ty2) then raise TYPE_ERROR
-                else ty1
+                begin match ty2 with
+                        |Fun(ty21, ty22) -> 
+                                        if not (ty1 = ty22) then raise TYPE_ERROR
+                                        else begin match ty21 with
+                                                |Exception(ty21') -> ty1
+                                                |_ -> raise TYPE_ERROR
+                                        end
+                        |_ -> raise TYPE_ERROR
+                end
+        (* T-Exn p175 *)
+        |Raise(t1) -> let ty = infer g t1 in
+                begin match ty with
+                        |Exception(ty') -> ty'
+                        |_ -> raise TYPE_ERROR
+                end
 
 (*testing *)
 let tests = 
