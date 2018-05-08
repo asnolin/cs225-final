@@ -159,8 +159,10 @@ let rec step (t0 : term) : result = match t0 with
        * v₁ e₂ —→ v₁ e₂′
        *)
       | Step(t2') -> Step(App(t1,t2'))
-      (* Our Definition *)
-      | Stuck -> Stuck
+      | Stuck -> begin match v1 with
+        |VLam(x,ty,t) -> Step(subst x ty t2 t)
+        |_ -> Stuck
+        end
       (* E-AppErr2 p172*)
       | RError(ty) -> RError(ty)
       (* E-AppRaise2 p175 *)
@@ -185,8 +187,7 @@ let rec step (t0 : term) : result = match t0 with
     end
     end
   (* Our Definition *)
-  |Var(x) -> Step(Var(x))
-  (* Our Definition *)
+  |Var(x) -> Stuck
   |Error(ty) -> RError(ty)
   (* Try Evaluation p172,174,175 *)
   |TryWith(t1,t2) -> 
@@ -271,13 +272,22 @@ let tests =
     let app_ans : result = Step(Var("y")) in
     let appOfVars : term = App(Var("x"),Var("y")) in
     let appOfVars_ans : result = Stuck in 
-    (*TODO more tests*)
+    (*infer tests*)
 
-let lang_test : Util.test_block = 
+let step_test : Util.test_block = 
     TestBlock
-    ("Lang5",
+    ("Lang5 subst",
     [lambda, lambda_ans
     ;app, app_ans
     ;appOfVars, appOfVars_ans
     ],step, (=),show_term ,show_result)in
-run_tests[lang_test]
+run_tests[step_test]
+
+(*
+let infer_test : Util.test_block =
+    TestBlock
+    ("Lang5 infer",
+    [
+
+    ],infer, (=), show_term, show_ty)in
+run_tests[infer_test] *)
