@@ -199,14 +199,20 @@ let rec infer (g : tenv) (t : term) : ty = match t with
 
 (*testing *)
 let tests = 
+    (*lambda calc tests*)
     let lambda : term = Lam("x",Unit,Var("x")) in 
     let lambda_ans : result = Val(VLam("x",Unit,Var("x"))) in
+    let app : term = App(Lam("x",Unit, Var("x")),Var("y")) in
+    let app_ans : result = Step(Var("y")) in
+    let appOfVars : term = App(Var("x"),Var("y")) in
+    let appOfVars_ans : result = Stuck in 
     (*TODO more tests*)
 
 let lang_test : Util.test_block = 
     TestBlock
     ("Lang5",
     [lambda, lambda_ans
-    ;
+    ;app, app_ans
+    ;appOfVars, appOfVars_ans
     ],step, (=),show_term ,show_result)in
 run_tests[lang_test]
