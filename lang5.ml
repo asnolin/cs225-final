@@ -132,14 +132,18 @@ let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match uni
 (*step*)    (*from ec1, stripped down to untyped lambda calc*)
 let rec step (t0 : term) : result = match t0 with
   (* λx:τ.e  ∈  val *)
+  (* Our Definitions *)
   | True -> Val(VTrue)
   | False -> Val(VFalse)
+  (* E-IfTrue, E-IfFalse p34 *)
   | If(t1,t2,t3) -> begin match t1 with
         |True -> Step(t2)
         |False -> Step(t3)
         |_ -> raise TYPE_ERROR
         end
+  (* Our Definition *)
   | Lam(x,ty,t) -> Val(VLam(x,ty,t))
+  (* App Evaluations p103,172,175 *)
   | App(t1,t2) -> begin match step t1 with
     | Val(v1) -> begin match step t2 with
       | Val(v2) -> begin match v1 with
@@ -155,8 +159,11 @@ let rec step (t0 : term) : result = match t0 with
        * v₁ e₂ —→ v₁ e₂′
        *)
       | Step(t2') -> Step(App(t1,t2'))
+      (* Our Definition *)
       | Stuck -> Stuck
+      (* E-AppErr2 p172*)
       | RError(ty) -> RError(ty)
+      (* E-AppRaise2 p175 *)
       | RRaise(t) -> begin match step t with
                 |Val(v1) -> Step(t2)
                 |_ -> Stuck
@@ -167,28 +174,41 @@ let rec step (t0 : term) : result = match t0 with
      * e₁ e₂ —→ e₁′ e₂
      *)
     | Step(t1') -> Step(App(t1',t2))
+    (* Our Definition *)
     | Stuck -> Stuck
+    (* E-AppErr1 p172 *)
     | RError(ty) -> RError(ty)
+    (* E-AppRaise1 p175 *)
     | RRaise(t) -> begin match step t with
-                |Val(v1) -> Step(t2)
+                |Val(v1) -> step t1
                 |_ -> Stuck
     end
     end
+  (* Our Definition *)
   |Var(x) -> Step(Var(x))
+  (* Our Definition *)
   |Error(ty) -> RError(ty)
+  (* Try Evaluation p172,174,175 *)
   |TryWith(t1,t2) -> 
         begin match step t1 with
+        (* E-TryV p174 *)
         |Val(v1) -> Step(t1)
+        (* E-Try p174 *)
         |Step(t1') -> Step(TryWith(t1',t2))
+        (* E-TryError p174 *)
         |RError(ty) -> Step(t2)
+        (* E-TryRaise p175 *)
         |RRaise(t1') -> begin match step t1' with
                 |Val(v1) -> Step(App(t2, t1'))
                 |_ -> Stuck
         end
         |_ -> Stuck
         end
+  (* Raise Evaluation p175 *)
   |Raise(t) -> begin match step t with
+        (* E-Raise p175 *)
         |Step(t') -> Step(Raise(t'))
+        (* E-RaiseRaise p175 *)
         |RRaise(t') -> begin match step t' with
                 |Val(v1) -> RRaise(t')
                 |_ -> Stuck
@@ -196,6 +216,7 @@ let rec step (t0 : term) : result = match t0 with
         |_ -> Stuck
   end
 
+(* Pieces taken from Darais' hw5.ml *)
 let rec infer (g : tenv) (t : term) : ty = match t with
         |True -> Bool
         |False -> Bool
@@ -206,9 +227,12 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                 if not (ty1 = Bool) then raise TYPE_ERROR else
                 if not (ty2 = ty3) then raise TYPE_ERROR else
                 ty2
+        (* T-Var *)
         |Var(x) -> StringMap.find x g
+        (* T-Abs p103 *)
         |Lam(x,ty,t1) -> let ty2 = infer (StringMap.add x ty g) t1 in
                 Fun(ty,ty2)
+        (* T-App p103 *)
         |App(t1,t2) -> let ty = infer g t1 in
                 begin match ty with
                 |Fun(ty1,ty2) ->
@@ -216,7 +240,9 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                         else raise TYPE_ERROR
                 |_ -> raise TYPE_ERROR
                 end
+        (* T-Error p172 *)
         |Error(ty) -> ty
+        (* T-Try p175 *)
         |TryWith(t1,t2) -> 
                 let ty1 = infer g t1 in
                 let ty2 = infer g t2 in
@@ -229,6 +255,7 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                                         end
                         |_ -> raise TYPE_ERROR
                 end
+        (* T-Exn p175 *)
         |Raise(t1) -> let ty = infer g t1 in
                 begin match ty with
                         |Exception(ty') -> ty'
