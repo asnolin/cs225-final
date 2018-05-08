@@ -21,6 +21,8 @@ type term =
         [@@deriving show]
         
 type value =
+        |VTrue
+        |VFalse
         |VLam of string * ty * term
         [@@deriving show]
 
@@ -34,6 +36,8 @@ type result =
 type tenv = ty string_map
 
 let rec term_of_val (v : value) : term = match v with
+        |VTrue -> True
+        |VFalse -> False
         |VLam(x,ty,t) -> Lam(x,ty,t)
 
 (*free vars*)
@@ -122,8 +126,8 @@ let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match uni
 (*step*)    (*from ec1, stripped down to untyped lambda calc*)
 let rec step (t0 : term) : result = match t0 with
   (* λx:τ.e  ∈  val *)
-  | True -> Stuck
-  | False -> Stuck
+  | True -> Val(VTrue)
+  | False -> Val(VFalse)
   | If(t1,t2,t3) -> begin match t1 with
         |True -> Step(t2)
         |False -> Step(t3)
@@ -136,6 +140,8 @@ let rec step (t0 : term) : result = match t0 with
         (* —————————————————————(β)
          * (λx:τ.e)v —→ [x ↦ v]e
          *)
+        | VTrue -> Stuck
+        | VFalse -> Stuck
         | VLam(x,ty,t) -> Step(subst x ty (term_of_val v2) t)
         end
       (*   e₂ —→ e₂′
@@ -154,7 +160,7 @@ let rec step (t0 : term) : result = match t0 with
     | Stuck -> Stuck
     | RError(ty) -> RError(ty)
     end
-  |Var(x) -> Stuck
+  |Var(x) -> Step(Var(x))
   |Error(ty) -> RError(ty)
   |TryWith(t1,t2) -> 
         begin match step t1 with
@@ -185,7 +191,11 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                 |_ -> raise TYPE_ERROR
                 end
         |Error(ty) -> ty
-        |TryWith(t1,t2) -> raise TODO
+        |TryWith(t1,t2) -> 
+                let ty1 = infer g t1 in
+                let ty2 = infer g t2 in
+                if not (ty1 = ty2) then raise TYPE_ERROR
+                else ty1
 
 (*testing *)
 let tests = 
