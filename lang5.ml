@@ -17,6 +17,7 @@ type term =
         |Lam of string * ty * term
         |App of term * term
         |Error of ty
+        |TryWith of term * term
         [@@deriving show]
         
 type value =
@@ -44,6 +45,8 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   | Lam(x,ty,t) -> StringSet.remove x (free_vars t)
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
   | Error(ty) -> StringSet.empty
+  (* Need to check free_vars of TryWith!!! *)
+  | TryWith(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
 
 
 (* Enforces global uniqueness of variables. from ec1 *)
@@ -70,6 +73,10 @@ let unique_vars (t : term) : term =
   let rec unique_vars_r (t0 : term) (env : string string_map) (g : string_set) : term * string_set = 
           match t0 with
       | Error(ty) -> (Error(ty),g)
+      | TryWith(t1,t2) -> 
+          let (t1',g') = unique_vars_r t1 env g in
+          let (t2',g'') = unique_vars_r t2 env g' in
+          (TryWith(t1',t2'),g'')
       | True -> (True,g)
       | False -> (False,g)
       | If(t1,t2,t3) -> 
@@ -104,6 +111,7 @@ let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
     |Lam(y,ty,t1) -> Lam(y,ty,subst_r x t2 t1)
     |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
     |Error(ty) -> t10
+    |TryWith(t11,t12) -> TryWith(subst_r x t2 t11,subst_r x t2 t12)
 
 (*when App(Lam(x.t),t)[x->v]t from ec1 *)
 let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
@@ -148,6 +156,13 @@ let rec step (t0 : term) : result = match t0 with
     end
   |Var(x) -> Stuck
   |Error(ty) -> RError(ty)
+  |TryWith(t1,t2) -> 
+        begin match step t1 with
+        |Val(v1) -> Step(t1)
+        |Step(t1') -> Step(TryWith(t1',t2))
+        |RError(ty) -> Step(t2)
+        |_ -> Stuck
+        end
 
 let rec infer (g : tenv) (t : term) : ty = match t with
         |True -> Bool
@@ -170,6 +185,7 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                 |_ -> raise TYPE_ERROR
                 end
         |Error(ty) -> ty
+        |TryWith(t1,t2) -> raise TODO
 
 (*testing *)
 let tests = 
