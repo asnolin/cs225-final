@@ -18,6 +18,7 @@ type term =
         |App of term * term
         |Error of ty
         |TryWith of term * term
+        |Raise of term
         [@@deriving show]
         
 type value =
@@ -31,6 +32,7 @@ type result =
         |Step of term
         |Val of value
         |RError of ty
+        |RRaise of term
         [@@deriving show]
 
 type tenv = ty string_map
@@ -49,8 +51,8 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   | Lam(x,ty,t) -> StringSet.remove x (free_vars t)
   | App(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
   | Error(ty) -> StringSet.empty
-  (* Need to check free_vars of TryWith!!! *)
   | TryWith(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
+  | Raise(t1) -> free_vars t1
 
 
 (* Enforces global uniqueness of variables. from ec1 *)
@@ -81,6 +83,8 @@ let unique_vars (t : term) : term =
           let (t1',g') = unique_vars_r t1 env g in
           let (t2',g'') = unique_vars_r t2 env g' in
           (TryWith(t1',t2'),g'')
+      | Raise(t1) -> let (t1',g') = unique_vars_r t1 env g in
+              (Raise(t1'),g)
       | True -> (True,g)
       | False -> (False,g)
       | If(t1,t2,t3) -> 
@@ -116,6 +120,7 @@ let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
     |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
     |Error(ty) -> t10
     |TryWith(t11,t12) -> TryWith(subst_r x t2 t11,subst_r x t2 t12)
+    |Raise(t11) -> Raise(subst_r x t2 t11)
 
 (*when App(Lam(x.t),t)[x->v]t from ec1 *)
 let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
@@ -154,6 +159,10 @@ let rec step (t0 : term) : result = match t0 with
         |_ -> Stuck
         end
       | RError(ty) -> RError(ty)
+      | RRaise(t) -> begin match step t with
+                |Val(v1) -> Step(t2)
+                |_ -> Stuck
+      end
       end
     (*    e₁ —→ e₁′
      * ———————————————
@@ -162,6 +171,10 @@ let rec step (t0 : term) : result = match t0 with
     | Step(t1') -> Step(App(t1',t2))
     | Stuck -> Stuck
     | RError(ty) -> RError(ty)
+    | RRaise(t) -> begin match step t with
+                |Val(v1) -> Step(t2)
+                |_ -> Stuck
+    end
     end
   |Var(x) -> Stuck
   |Error(ty) -> RError(ty)
@@ -170,8 +183,20 @@ let rec step (t0 : term) : result = match t0 with
         |Val(v1) -> Step(t1)
         |Step(t1') -> Step(TryWith(t1',t2))
         |RError(ty) -> Step(t2)
+        |RRaise(t1') -> begin match step t1' with
+                |Val(v1) -> Step(App(t2, t1'))
+                |_ -> Stuck
+        end
         |_ -> Stuck
         end
+  |Raise(t) -> begin match step t with
+        |Step(t') -> Step(Raise(t'))
+        |RRaise(t') -> begin match step t' with
+                |Val(v1) -> RRaise(t')
+                |_ -> Stuck
+        end
+        |_ -> Stuck
+  end
 
 let rec infer (g : tenv) (t : term) : ty = match t with
         |True -> Bool
@@ -199,6 +224,7 @@ let rec infer (g : tenv) (t : term) : ty = match t with
                 let ty2 = infer g t2 in
                 if not (ty1 = ty2) then raise TYPE_ERROR
                 else ty1
+        |Raise(t1) -> raise TODO
 
 (*testing *)
 let tests = 
