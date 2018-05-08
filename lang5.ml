@@ -1,28 +1,46 @@
 open Util
 open StringSetMap
 
+
 type ty =
         |Bool
         |Unit
         |Fun of ty * ty
+        |Number
         [@@deriving show]
 
 exception TYPE_ERROR
 
 type term =
+        (*bool terms*)
         |True
         |False
         |If of term * term * term
+        (*typed lambda calc terms*)
         |Var of string
         |Lam of string * ty * term
         |App of term * term
         |Error of ty
         |TryWith of term * term
+        (*number terms*)
+        |Nan
+        |Zero
+        |Succ of term
+        |Pred of term
+        |Add of term * term
+        |Sub of term * term
+        |Mult of term * term
+        |Div of term * term
+        |Mod of term * term
+        |Sqrt of term        
         [@@deriving show]
         
 type value =
         |VTrue
         |VFalse
+        |Res of term
+        |DIV_BY_0
+        |IMAGINARY
         |VLam of string * ty * term
         [@@deriving show]
 
@@ -39,7 +57,9 @@ let rec term_of_val (v : value) : term = match v with
         |VTrue -> True
         |VFalse -> False
         |VLam(x,ty,t) -> Lam(x,ty,t)
-
+        |Res(n) -> n
+        |DIV_BY_0 -> Nan
+        |IMAGINARY -> Nan
 (*free vars*)
 let rec free_vars (t0 : term) : string_set = match t0 with
   | True -> StringSet.empty
@@ -51,7 +71,16 @@ let rec free_vars (t0 : term) : string_set = match t0 with
   | Error(ty) -> StringSet.empty
   (* Need to check free_vars of TryWith!!! *)
   | TryWith(t1,t2) -> StringSet.union (free_vars t1) (free_vars t2)
-
+  |Nan -> StringSet.empty
+  |Zero -> StringSet.empty
+  |Succ(n) -> free_vars n
+  |Pred(n) -> free_vars n
+  |Add(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
+  |Sub(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
+  |Mult(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
+  |Div(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
+  |Mod(n1, n2) -> StringSet.union (free_vars n1) (free_vars n2)
+  |Sqrt(n) -> free_vars n
 
 (* Enforces global uniqueness of variables. from ec1 *)
 let unique_vars (t : term) : term =
@@ -76,6 +105,31 @@ let unique_vars (t : term) : term =
   let rename_var = rename_var_r None in
   let rec unique_vars_r (t0 : term) (env : string string_map) (g : string_set) : term * string_set = 
           match t0 with
+      |Nan -> (Nan,g)
+      |Zero ->(Zero,g)
+      |Succ(n) -> unique_vars_r n env g
+      |Pred(n) -> unique_vars_r n env g
+      |Add(n1,n2) -> 
+                let (n1',g') = unique_vars_r n1 env g in
+                let (n2',g') = unique_vars_r n1 env g in
+                (Add(n1',n2'),g')           
+      |Sub(n1,n2) ->
+                let (n1',g') = unique_vars_r n1 env g in
+                let (n2',g') = unique_vars_r n1 env g in
+                (Sub(n1',n2'),g') 
+      |Mult(n1,n2) ->
+                let (n1',g') = unique_vars_r n1 env g in
+                let (n2',g') = unique_vars_r n1 env g in
+                (Mult(n1',n2'),g') 
+      |Div(n1,n2) ->
+                let (n1',g') = unique_vars_r n1 env g in
+                let (n2',g') = unique_vars_r n1 env g in
+                (Div(n1',n2'),g') 
+      |Mod(n1,n2) -> 
+                let (n1',g') = unique_vars_r n1 env g in
+                let (n2',g') = unique_vars_r n1 env g in
+                (Mod(n1',n2'),g')      
+      |Sqrt(n) -> unique_vars_r n env g
       | Error(ty) -> (Error(ty),g)
       | TryWith(t1,t2) -> 
           let (t1',g') = unique_vars_r t1 env g in
@@ -116,7 +170,16 @@ let rec subst_r (x : string) (t2 : term)(t10 : term) : term = match t10 with
     |App(t11, t12) -> App(subst_r x t2 t11,subst_r x t2 t12)
     |Error(ty) -> t10
     |TryWith(t11,t12) -> TryWith(subst_r x t2 t11,subst_r x t2 t12)
-
+    |Zero -> t10
+    |Nan -> t10
+    |Succ(n) -> Succ(subst_r x t2 n)
+    |Pred(n) -> Pred(subst_r x t2 n)
+    |Add(n1,n2) -> Add(subst_r x t2 n1, subst_r x t2 n2)
+    |Sub(n1,n2) ->Sub(subst_r x t2 n1, subst_r x t2 n2)
+    |Mult(n1,n2) -> Mult(subst_r x t2 n1, subst_r x t2 n2)
+    |Div(n1,n2) -> Div(subst_r x t2 n1, subst_r x t2 n2)
+    |Mod(n1,n2) -> Mod(subst_r x t2 n1, subst_r x t2 n2)
+    |Sqrt(n) -> Sqrt(subst_r x t2 n)
 (*when App(Lam(x.t),t)[x->v]t from ec1 *)
 let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match unique_vars(App(Lam(x,ty1,t1),t2)) with
     |App(Lam(x',ty,t1'),t2') -> subst_r x' t2' t1'
@@ -125,6 +188,40 @@ let rec subst(x : string) (ty1 : ty) (t2 : term) (t1 : term) : term  = match uni
 
 (*step*)    (*from ec1, stripped down to untyped lambda calc*)
 let rec step (t0 : term) : result = match t0 with
+  |Nan -> RError(Number)
+  |Zero -> Val(Res(Zero))
+  |Succ(n) -> Val(Res(t0))
+  |Pred(n) -> Val(Res(t0))
+  |Add(n1,n2) -> begin match n1 with
+        |Nan -> RError(Number)
+        |Zero -> Step(n2)
+        |Succ(n1') -> begin match n2 with
+                |Nan -> RError(Number)
+                |Zero -> Step(n1)
+                |Succ(n2') -> Step(Add(Succ(n1),n2'))
+                |Pred(n2') -> Step(Add(n1',n2'))
+                |_ -> let x = step n2 in
+                        begin match x with
+                        |Val(v)-> raise TODO
+                        |Stuck -> Stuck
+                        |Step(t) -> raise TODO
+                        |RError(ty) -> raise TODO
+                        end
+                end 
+        |Pred(n1') -> raise TODO
+        |Add(n1',n2') -> raise TODO
+        |Sub(n1',n2') -> raise TODO
+        |Mult(n1',n2') -> raise TODO
+        |Div(n1',n2') -> raise TODO
+        |Mod(n1',n2') -> raise TODO
+        |Sqrt (n') -> raise TODO
+        |_ -> raise TODO
+        end
+  |Sub(n1,n2) -> raise TODO
+  |Mult(n1,n2) -> raise TODO
+  |Div(n1,n2) -> raise TODO
+  |Mod(n1,n2) -> raise TODO
+  |Sqrt(n) -> raise TODO
   (* λx:τ.e  ∈  val *)
   | True -> Val(VTrue)
   | False -> Val(VFalse)
@@ -143,6 +240,9 @@ let rec step (t0 : term) : result = match t0 with
         | VTrue -> Stuck
         | VFalse -> Stuck
         | VLam(x,ty,t) -> Step(subst x ty (term_of_val v2) t)
+        |DIV_BY_0 -> raise TODO
+        |IMAGINARY -> raise TODO
+        |Res(n) -> raise TODO
         end
       (*   e₂ —→ e₂′
        * —————————————
@@ -174,6 +274,16 @@ let rec step (t0 : term) : result = match t0 with
         end
 
 let rec infer (g : tenv) (t : term) : ty = match t with
+        |Nan -> raise TODO
+        |Zero -> raise TODO
+        |Succ(n) -> raise TODO
+        |Pred(n) -> raise TODO
+        |Add(n1,n2) -> raise TODO
+        |Sub(n1,n2) -> raise TODO
+        |Mult(n1,n2) -> raise TODO
+        |Div(n1,n2) -> raise TODO
+        |Mod(n1,n2) -> raise TODO
+        |Sqrt(n) -> raise TODO
         |True -> Bool
         |False -> Bool
         |If(t1,t2,t3) -> 
